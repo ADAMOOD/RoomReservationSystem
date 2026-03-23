@@ -1,0 +1,23 @@
+# Prerekvizity
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Složky sestavení (build)
+[Bb]in/
+[Oo]bj/
+[Oo]ut/
+
+# Uživatelské nastavení Visual Studia
+.vs/
+
+# Osobní konfigurace
+appsettings.Development.json
+appsettings.override.json
+
+# Dapper / Entity Framework migrace (pokud by se použily lokální databáze v souboru)
+*.mdf
+*.ldf
+*.ndf
