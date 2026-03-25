@@ -1,0 +1,34 @@
+﻿@using RoomReservatingSystem.Shared
+@model IEnumerable<Room>
+
+@{
+	ViewData["Title"] = "List of Rooms";
+}
+
+<div class="text-center">
+	<h1 class="display-4">Rooms</h1>
+</div>
+
+<table class="table table-striped mt-4">
+	<thead class="table-dark">
+	<tr>
+		<th>ID</th>
+		<th>Name</th>
+		<th>Capacity</th>
+		<th>Equipment</th>
+		<th>Max. reservation time (min)</th>
+	</tr>
+	</thead>
+	<tbody>
+	@foreach (var room in Model)
+	{
+		<tr>
+			<td>@room.Id</td>
+			<td>@room.Name</td>
+			<td>@room.Capacity</td>
+			<td>@room.Equipment</td>
+			<td>@room.MaxReservationMinutes</td>
+		</tr>
+	}
+	</tbody>
+</table>

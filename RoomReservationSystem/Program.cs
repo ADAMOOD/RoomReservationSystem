@@ -1,3 +1,4 @@
+using RoomReservatingSystem.Shared;
 using RoomReservationSystem.Repositories;
 
 namespace RoomReservationSystem
