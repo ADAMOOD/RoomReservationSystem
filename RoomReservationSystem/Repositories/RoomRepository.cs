@@ -12,18 +12,19 @@ namespace RoomReservationSystem.Repositories
         {
             _connectionString = configuration.GetConnectionString("DefaultConnection");
         }
-        public IEnumerable<Room> GetAllRooms()
+        public async Task<IEnumerable<Room>> GetAllRoomsAsync()
         {
             using (IDbConnection db = new SqlConnection(_connectionString))
             {
-                return db.GetList<Room>();
+                return await db.GetListAsync<Room>();
             }
         }
-        public int AddRoom(Room room)
+        public async Task<int> AddRoomAsync(Room room)
         {
             using (IDbConnection db = new SqlConnection(_connectionString))
             {
-                return (int)db.Insert(room);
+                var newId = await db.InsertAsync<Room>(room);
+                return (int)newId;
             }
         }
     }

@@ -13,11 +13,10 @@ namespace RoomReservationSystem.Controllers
             _repository = repository;
         }
 
-        // Akce, která se zavolá, když uživatel přijde na stránku
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
             // 1. Získáme data z databáze
-            var rooms = _repository.GetAllRooms();
+            var rooms = await _repository.GetAllRoomsAsync();
             return View(rooms);
         }
     }

@@ -14,16 +14,16 @@ namespace RoomReservationSystem.Controllers
             _repository = repository;
         }
         [HttpGet]
-        public IActionResult GetAllRooms()
+        public async Task<IActionResult> GetAllRoomsAsync()
         {
-            var rooms = _repository.GetAllRooms();
+            var rooms = await _repository.GetAllRoomsAsync();
             return Ok(rooms);
         }
 
         [HttpPost]
-        public IActionResult CreateRoom([FromBody] Room newRoom)
+        public async Task<IActionResult> CreateRoomAsync([FromBody] Room newRoom)
         {
-            _repository.AddRoom(newRoom);
+            await _repository.AddRoomAsync(newRoom);
             return Ok();
         }
     }
