@@ -12,6 +12,12 @@ namespace RoomReservationSystem
             // Add services to the container.
             builder.Services.AddControllersWithViews();
 
+            builder.Services.AddAuthentication("Cookies")
+                .AddCookie("Cookies", options =>
+                {
+                    //Redirect if user tries to acces locked site
+                    options.LoginPath = "/Account/Login";
+                });
 
             builder.Services.AddScoped<RoomRepository>();
             builder.Services.AddScoped<UserRepository>();
@@ -29,6 +35,7 @@ namespace RoomReservationSystem
             app.UseHttpsRedirection();
             app.UseRouting();
 
+            app.UseAuthentication(); // ClaimsIdentity Check (Cookies)
             app.UseAuthorization();
 
             app.MapStaticAssets();
