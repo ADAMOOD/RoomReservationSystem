@@ -19,12 +19,19 @@ namespace RoomReservationSystem.Repositories
                 return await db.GetListAsync<Room>();
             }
         }
-        public async Task<int> AddRoomAsync(Room room)
+        public async Task<int?> AddRoomAsync(Room room)
         {
             using (IDbConnection db = new SqlConnection(_connectionString))
             {
                 var newId = await db.InsertAsync<Room>(room);
                 return (int)newId;
+            }
+        }
+        public async Task<Room> GetRoomByIdAsync(int id)
+        {
+            using (IDbConnection db = new SqlConnection(_connectionString))
+            {
+                return await db.GetAsync<Room>(id);
             }
         }
     }

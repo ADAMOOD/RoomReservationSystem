@@ -17,9 +17,11 @@
 		<th>Capacity</th>
 		<th>Equipment</th>
 		<th>Max. reservation time (min)</th>
+		<th></th>
 	</tr>
 	</thead>
 	<tbody>
+
 	@foreach (var room in Model)
 	{
 		<tr>
@@ -28,6 +30,9 @@
 			<td>@room.Capacity</td>
 			<td>@room.Equipment</td>
 			<td>@room.MaxReservationMinutes</td>
+			<td>
+				<a asp-action="Book" asp-route-id="@room.Id" class="btn btn-sm btn-success">Rezervovat</a>
+			</td>
 		</tr>
 	}
 	</tbody>

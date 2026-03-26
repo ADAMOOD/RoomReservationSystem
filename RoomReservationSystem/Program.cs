@@ -21,6 +21,7 @@ namespace RoomReservationSystem
 
             builder.Services.AddScoped<RoomRepository>();
             builder.Services.AddScoped<UserRepository>();
+            builder.Services.AddScoped<ReservationRepository>();
 
             var app = builder.Build();
 
