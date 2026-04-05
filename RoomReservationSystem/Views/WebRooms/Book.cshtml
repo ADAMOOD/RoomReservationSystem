@@ -10,8 +10,10 @@
             <div class="card-body">
 	            <h2 class="card-title text-center mb-4">New reservation - @Model.RoomName</h2>
 
-                <form asp-action="Book" method="post">
-
+	            <form asp-action="Book" method="post" onsubmit="this.querySelector('button[type=submit]').disabled = true;">
+	                <input type="hidden" asp-for="RoomCapacity" />
+	                <input type="hidden" asp-for="MaxReservationMinutes" />
+	                <input type="hidden" asp-for="RoomName" />
                     <input type="hidden" asp-for="RoomId" />
 
                     <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>

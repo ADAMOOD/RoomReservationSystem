@@ -1,0 +1,37 @@
+﻿@{
+	ViewData["Title"] = "Test Kalendáře";
+}
+
+<script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js'></script>
+
+<div class="container mt-4">
+	<h2>Test Kalendáře pro místnost @ViewBag.RoomId</h2>
+	<hr />
+    
+	<div id='calendar'></div>
+</div>
+
+<script>
+    // Tento kód počká, až se načte celá HTML stránka
+    document.addEventListener('DOMContentLoaded', function() {
+        
+        // Najdeme náš prázdný div
+        var calendarEl = document.getElementById('calendar');
+
+        // Vytvoříme nový kalendář
+        var calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'timeGridWeek', // Výchozí pohled: týdenní rozvrh s hodinami
+            headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'dayGridMonth,timeGridWeek,timeGridDay' // Přepínání měsíc/týden/den
+            },
+            
+            // TADY JE TO HLAVNÍ: Říkáme kalendáři, ať si data tahá z tvého nového API!
+            events: '/WebRooms/GetRoomEvents?roomId=' + @ViewBag.RoomId
+        });
+
+        // Vykresli se!
+        calendar.render();
+    });
+</script>
