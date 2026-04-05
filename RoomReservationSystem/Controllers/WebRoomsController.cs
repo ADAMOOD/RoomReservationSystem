@@ -60,14 +60,6 @@ namespace RoomReservationSystem.Controllers
 
             return Json(calendarEvents);
         }
-        //TEST
-        [HttpGet]
-        public IActionResult CalendarTest(int roomId)
-        {
-            ViewBag.RoomId = roomId; // Tímto jednoduše pošleme ID do HTML
-            return View();
-        }
-        //TEST
 
         [Authorize]
         [HttpPost]
@@ -75,7 +67,13 @@ namespace RoomReservationSystem.Controllers
         {
             if (!ModelState.IsValid)
             {
-                return View(model);
+                // Get all errs and print them as long message
+                var errorMessages = string.Join(" | ", ModelState.Values
+                    .SelectMany(v => v.Errors)
+                    .Select(e => e.ErrorMessage));
+
+                TempData["ErrorMessage"] = $"Reservation fault ({model.RoomName}): {errorMessages}";
+                return RedirectToAction("Index"); 
             }
             var existingReservations = await _reservationRepository.GetAllReservationsForRoomAsync(model.RoomId);
 
@@ -85,8 +83,8 @@ namespace RoomReservationSystem.Controllers
 
             if (isOverlapping)
             {
-                ModelState.AddModelError("", "Sorry, but there is already a reservation at this time");
-                return View(model);
+                TempData["ErrorMessage"] = $"Sorry, but {model.RoomName} Is already booked at this time";
+                return RedirectToAction("Index");
             }
 
             int loggedUserId = int.Parse(User.FindFirstValue("UserId"));//user is a shortcut for HttpContext.User which we have access due to the Controller inharitance
@@ -101,6 +99,7 @@ namespace RoomReservationSystem.Controllers
                 Status = ReservationStatus.Active
             };
             await _reservationRepository.CreateReservationAsync(newReservation);
+            TempData["SuccessMessage"] = $"Reservation {model.RoomName} has been successfuly made!";
             return RedirectToAction("Index");
         }
 

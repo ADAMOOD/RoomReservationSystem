@@ -2,38 +2,134 @@
 @model IEnumerable<Room>
 
 @{
-	ViewData["Title"] = "List of Rooms";
+	ViewData["Title"] = "Avilable rooms";
 }
 
-<div class="text-center">
-	<h1 class="display-4">Rooms</h1>
-</div>
+<script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js'></script>
 
-<table class="table table-striped mt-4">
-	<thead class="table-dark">
-	<tr>
-		<th>ID</th>
-		<th>Name</th>
-		<th>Capacity</th>
-		<th>Equipment</th>
-		<th>Max. reservation time (min)</th>
-		<th></th>
-	</tr>
-	</thead>
-	<tbody>
+<h2 class="mb-4 text-center">Rooms booking</h2>
+
+@if (TempData["ErrorMessage"] != null)
+{
+	<div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
+		<strong>Oops!</strong> @TempData["ErrorMessage"]
+		<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+	</div>
+}
+
+@if (TempData["SuccessMessage"] != null)
+{
+	<div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
+		<strong>Great!</strong> @TempData["SuccessMessage"]
+		<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+	</div>
+}
+
+<div class="accordion shadow-sm" id="roomsAccordion">
 
 	@foreach (var room in Model)
 	{
-		<tr>
-			<td>@room.Id</td>
-			<td>@room.Name</td>
-			<td>@room.Capacity</td>
-			<td>@room.Equipment</td>
-			<td>@room.MaxReservationMinutes</td>
-			<td>
-				<a asp-action="Book" asp-route-id="@room.Id" class="btn btn-sm btn-success">Rezervovat</a>
-			</td>
-		</tr>
+		<div class="accordion-item">
+			<h2 class="accordion-header" id="heading-@room.Id">
+				<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-@room.Id">
+					<strong>@room.Name</strong> &nbsp; <span class="text-muted">(Capacity: @room.Capacity people | Equipment: @room.Equipment)</span>
+				</button>
+			</h2>
+
+			<div id="collapse-@room.Id" class="accordion-collapse collapse" data-bs-parent="#roomsAccordion">
+				<div class="accordion-body">
+					<div class="row">
+
+						<div class="col-lg-8">
+							<div id="calendar-@room.Id"></div>
+						</div>
+
+						<div class="col-lg-4 mt-4 mt-lg-0 border-start ps-lg-4">
+							<h4 class="mb-3">Make a reservation</h4>
+
+							<form asp-action="Book" method="post" onsubmit="this.querySelector('button[type=submit]').disabled = true;">
+								<input type="hidden" name="RoomId" value="@room.Id" />
+								<input type="hidden" name="RoomName" value="@room.Name" />
+								<input type="hidden" name="RoomCapacity" value="@room.Capacity" />
+								<input type="hidden" name="MaxReservationMinutes" value="@room.MaxReservationMinutes" />
+
+								<div class="mb-3">
+									<label class="form-label text-muted small mb-1">Reservation start</label>
+									<input type="datetime-local" class="form-control" name="StartTime" required />
+								</div>
+								<div class="mb-3">
+									<label class="form-label text-muted small mb-1">Reservation end</label>
+									<input type="datetime-local" class="form-control" name="EndTime" required />
+								</div>
+								<div class="mb-3">
+									<label class="form-label text-muted small mb-1">Purpose</label>
+									<input type="text" class="form-control" name="Purpose" placeholder="e.g. Breefing..." required />
+								</div>
+								<div class="mb-3">
+									<label class="form-label text-muted small mb-1">Number of people</label>
+									<input type="number" class="form-control" name="PersonCount" min="1" max="@room.Capacity" value="1" required />
+								</div>
+
+								<div class="d-grid mt-4">
+									<button type="submit" class="btn btn-success">Book</button>
+								</div>
+							</form>
+						</div>
+
+					</div>
+				</div>
+			</div>
+		</div>
 	}
-	</tbody>
-</table>
+</div>
+
+<script>
+	document.addEventListener('DOMContentLoaded', function() {
+
+		// Najdeme všechny rozbalovací panely na stránce
+		var collapseElements = document.querySelectorAll('.accordion-collapse');
+
+		collapseElements.forEach(function(collapseEl) {
+			// Tohle je ten trik! Zavoláme kalendář AŽ KDYŽ animace rozbalení úplně skončí
+			collapseEl.addEventListener('shown.bs.collapse', function () {
+
+				// Vytáhneme si ID místnosti z ID panelu (např. z "collapse-5" získáme "5")
+				var roomId = collapseEl.id.split('-')[1];
+				var calendarEl = document.getElementById('calendar-' + roomId);
+
+				// Kontrola: Vykreslíme kalendář, pouze pokud v tom divu ještě žádný není (aby se nenačítal při každém otevření/zavření znovu)
+				if (calendarEl.innerHTML === "") {
+					var calendar = new FullCalendar.Calendar(calendarEl, {
+						initialView: 'timeGridWeek',
+						height: 500, // Aby kalendář nebyl moc dlouhý
+						headerToolbar: {
+							left: 'prev,next',
+							center: 'title',
+							right: 'timeGridWeek,timeGridDay'
+						},
+						// Napojení na tvé API
+							events: '/WebRooms/GetRoomEvents?roomId=' + roomId, // Tohle už tam máš
+
+						// --- NOVÉ VLASTNOSTI ---
+						selectable: true,      // Povolí uživateli táhnout myší a vybrat čas
+						selectOverlap: false,  // Geniální věc: zakáže výběr přes už existující červené bloky!
+
+						// Tato funkce se spustí, jakmile uživatel myš pustí
+						select: function(info) {
+							// 1. Najdeme formulář vedle kalendáře
+							var form = collapseEl.querySelector('form');
+
+							// 2. FullCalendar nám vrátí čas ve formátu ISO (např. "2026-04-06T12:00:00+02:00")
+							// HTML input type="datetime-local" ale potřebuje jen prvních 16 znaků ("2026-04-06T12:00")
+							// Proto text jednoduše ořízneme a vložíme přímo do tvých políček:
+							form.querySelector('[name="StartTime"]').value = info.startStr.substring(0, 16);
+							form.querySelector('[name="EndTime"]').value = info.endStr.substring(0, 16);
+						}
+					});
+
+					calendar.render();
+				}
+			});
+		});
+	});
+</script>
