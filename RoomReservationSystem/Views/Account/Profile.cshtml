@@ -1,0 +1,88 @@
+﻿@using Microsoft.AspNetCore.Mvc.TagHelpers
+@using RoomReservatingSystem.Shared
+@model IEnumerable<RoomReservationSystem.ViewModels.UserProfileReservationViewModel>
+
+@{
+    ViewData["Title"] = "My reservations";
+}
+
+<div class="container mt-5">
+    <h2 class="mb-4">My reservations</h2>
+    @if (TempData["ErrorMessage"] != null)
+    {
+	    <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
+		    <strong>Oops!</strong> @TempData["ErrorMessage"]
+		    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+	    </div>
+    }
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+	    <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
+		    <strong>Great!</strong> @TempData["SuccessMessage"]
+		    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+	    </div>
+    }
+
+    @if (!Model.Any())
+    {
+        <div class="alert alert-info shadow-sm p-4 text-center">
+            <h4>Nothing Here</h4>
+            <p>You don't have any reservations created.</p>
+            <a asp-controller="WebRooms" asp-action="Index" class="btn btn-primary mt-3">View Available Rooms</a>
+        </div>
+    }
+    else
+    {
+        <div class="card shadow-sm">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped mb-0">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Room</th>
+                                <th>Purpose</th>
+                                <th>From</th>
+                                <th>To</th>
+                                <th>Number of People</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var reservation in Model)
+                            {
+                                <tr>
+                                    <td class="align-middle fw-bold">@reservation.RoomName</td>
+                                    <td class="align-middle">@reservation.Purpose</td>
+
+                                    <td class="align-middle">@reservation.StartTime.ToString("g")</td>
+                                    <td class="align-middle">@reservation.EndTime.ToString("g")</td>
+                                    <td class="align-middle">@reservation.PersonCount</td>
+
+                                    <td class="align-middle">
+                                        @if (reservation.Status == ReservationStatus.Active)
+                                        {
+                                            <span class="badge bg-success">Active</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary">Cancelled</span>
+                                        }
+                                    </td>
+
+                                    <td class="align-middle">
+                                        @if (reservation.Status == ReservationStatus.Active)
+                                        {
+                                            <a asp-action="CancelReservation" asp-route-id="@reservation.Id" class="btn btn-sm btn-outline-danger">Cancel</a>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+</div>

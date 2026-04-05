@@ -1,28 +1,81 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using RoomReservatingSystem.Shared;
 using RoomReservationSystem.Repositories;
 using RoomReservationSystem.ViewModels;
 using System.Reflection;
 using System.Security.Claims;
-using Microsoft.AspNetCore.Authentication;
 
 namespace RoomReservationSystem.Controllers
 {
     public class AccountController : Controller
     {
-        private readonly UserRepository _repository;
+        private readonly UserRepository _userRepository;
+        private readonly ReservationRepository _reservationRepository;
 
-        public AccountController(UserRepository repository)
+        public AccountController(UserRepository userRepository, ReservationRepository reservationRepository)
         {
-            _repository = repository;
+            _userRepository = userRepository;
+            _reservationRepository = reservationRepository;
         }
-
         [HttpGet]
         public IActionResult Register()
         {
             return View();
         }
+        [HttpGet]
+        public IActionResult Login()
+        {
+            return View();
+        }
+        [HttpGet]
+        public async Task<IActionResult> Logout()
+        {
+            // Unsign Cookie from the browser
+            await HttpContext.SignOutAsync("Cookies");
+            return RedirectToAction("Index", "Home");
+        }
 
+        [Authorize]
+        [HttpGet]
+        public async Task<IActionResult> Profile()
+        {
+            int loggedUserId = int.Parse(User.FindFirstValue("UserId"));
+            var reservations = await _reservationRepository.GetReservationsWithRoomNameByUserAsync(loggedUserId);
+            return View(reservations);
+        }
+
+        [Authorize]
+        [HttpGet] 
+        public async Task<IActionResult> CancelReservation(int id)
+        {
+            int loggedUserId = int.Parse(User.FindFirstValue("UserId"));
+
+            var reservation = await _reservationRepository.GetReservationByIdAsync(id);
+
+            if (reservation == null)
+            {
+                return NotFound();
+            }
+
+            if (reservation.OrganizerId != loggedUserId)
+            {
+                return Forbid(); // Return error 403
+            }
+
+            // already cancelled, no need to do it again, just redirectback to profile
+            if (reservation.Status == ReservationStatus.Cancelled)
+            {
+                return RedirectToAction("Profile");
+            }
+
+            reservation.Status = ReservationStatus.Cancelled;
+            await _reservationRepository.UpdateReservationAsync(reservation);
+
+            TempData["SuccessMessage"] = "Reservation has been successfully canceled";
+            return RedirectToAction("Profile");
+        }
         [HttpPost]
         public async Task<IActionResult> Register(RegisterViewModel model)
         {
@@ -31,7 +84,7 @@ namespace RoomReservationSystem.Controllers
                 return View(model);
             }
 
-            if (await _repository.GetUserByUsernameAsync(model.Username) != null)
+            if (await _userRepository.GetUserByUsernameAsync(model.Username) != null)
             {
                 ModelState.AddModelError("", "User with this name already exists");
                 return View(model);
@@ -44,16 +97,9 @@ namespace RoomReservationSystem.Controllers
                 IsAdmin = false
             };
 
-            await _repository.CreateUserAsync(newUser);
+            await _userRepository.CreateUserAsync(newUser);
             return RedirectToAction("Index", "Home");
         }
-
-        [HttpGet]
-        public IActionResult Login()
-        {
-            return View();
-        }
-
         [HttpPost]
         public async Task<IActionResult> Login(LoginViewModel model)
         {
@@ -62,7 +108,7 @@ namespace RoomReservationSystem.Controllers
                 return View(model);
             }
 
-            User dbUser = await _repository.GetUserByUsernameAsync(model.Username);
+            User dbUser = await _userRepository.GetUserByUsernameAsync(model.Username);
             if (dbUser == null)
             {
                 ModelState.AddModelError("", "User with this username does not exist");
@@ -90,12 +136,6 @@ namespace RoomReservationSystem.Controllers
 
             return RedirectToAction("Index", "Home");
         }
-        [HttpGet]
-        public async Task<IActionResult> Logout()
-        {
-            // Unsign Cookie from the browser
-            await HttpContext.SignOutAsync("Cookies");
-            return RedirectToAction("Index", "Home");
-        }
+
     }
 }

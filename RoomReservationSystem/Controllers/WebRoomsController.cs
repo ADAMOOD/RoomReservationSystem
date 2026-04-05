@@ -26,25 +26,6 @@ namespace RoomReservationSystem.Controllers
         }
 
         [HttpGet]
-        [HttpGet]
-        public async Task<IActionResult> Book(int id)
-        {
-            var room = await _roomRepository.GetRoomByIdAsync(id);
-
-            if (room == null)
-            {
-                return NotFound();
-            }
-            CreateReservationViewModel newReservation = new CreateReservationViewModel()
-            {
-                RoomId = id,
-                RoomName = room.Name,
-                RoomCapacity = room.Capacity,
-                MaxReservationMinutes = room.MaxReservationMinutes
-            };
-            return View(newReservation);
-        }
-        [HttpGet]
         public async Task<IActionResult> GetRoomEvents(int roomId)
         {
             var reservations = await _reservationRepository.GetAllReservationsForRoomAsync(roomId);
@@ -52,7 +33,7 @@ namespace RoomReservationSystem.Controllers
             var calendarEvents = reservations.Select(r => new
             {
                 title = r.Purpose,
-                start = r.StartTime.ToString("yyyy-MM-ddTHH:mm:ss"), // Important: ISO 8601 formát času
+                start = r.StartTime.ToString("yyyy-MM-ddTHH:mm:ss"), // Important: ISO 8601 time format
                 end = r.EndTime.ToString("yyyy-MM-ddTHH:mm:ss"),
                 color = "#dc3545",
                 allDay = false // times not all days
