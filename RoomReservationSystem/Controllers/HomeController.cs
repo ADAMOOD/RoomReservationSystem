@@ -1,27 +1,29 @@
 using System.Diagnostics;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Mvc;
 using RoomReservationSystem.Models;
+using RoomReservationSystem.Repositories;
 
 namespace RoomReservationSystem.Controllers
 {
     public class HomeController : Controller
     {
         private readonly ILogger<HomeController> _logger;
+        private readonly RoomRepository _roomRepository;
 
-        public HomeController(ILogger<HomeController> logger)
+
+        public HomeController(ILogger<HomeController> logger, RoomRepository roomRepository)
         {
             _logger = logger;
+            _roomRepository = roomRepository;
         }
 
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
-            return View();
+            var rooms = await _roomRepository.GetAllRoomsAsync();
+            return View(rooms);
         }
 
-        public IActionResult Privacy()
-        {
-            return View();
-        }
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()

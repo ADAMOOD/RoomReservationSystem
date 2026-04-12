@@ -1,5 +1,8 @@
-﻿@{
-    ViewData["Title"] = "Dashboard";
+﻿@using RoomReservatingSystem.Shared
+@model IEnumerable<Room>
+
+@{
+	ViewData["Title"] = "Dashboard";
 }
 
 <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js'></script>
@@ -24,14 +27,19 @@
     <div class="card-body">
         <form id="filterForm" class="row g-3">
 
-            <div class="col-md-4">
-                <label for="roomSelect" class="form-label">Select Room</label>
-                <select id="roomSelect" class="form-select">
-                    <option value="0" selected>All Rooms</option>
-                    <option value="1">Room No. Aula</option>
-                    <option value="2">Room No. EB214</option>
-                </select>
-            </div>
+	        <div class="col-md-4">
+		        <label for="roomSelect" class="form-label">Select Room</label>
+		        <select id="roomSelect" class="form-select">
+                    
+			        <option value="0" selected>All Rooms</option>
+                    
+			        @foreach (var room in Model)
+			        {
+				        <option value="@room.Id">@room.Name (Capacity: @room.Capacity)</option>
+			        }
+                    
+		        </select>
+	        </div>
 
             <div class="col-md-4">
                 <label for="searchPurpose" class="form-label">Search by Purpose</label>

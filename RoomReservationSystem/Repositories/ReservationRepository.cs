@@ -48,7 +48,7 @@ namespace RoomReservationSystem.Repositories
 
         public async Task<IEnumerable<UserProfileReservationViewModel>> GetReservationsWithRoomNameByUserAsync(int userId)
         {
-            using (IDbConnection db = new SqlConnection(_connectionString)) 
+            using (IDbConnection db = new SqlConnection(_connectionString))
             {
                 string sql = @"
             SELECT 
@@ -66,6 +66,52 @@ namespace RoomReservationSystem.Repositories
             using (IDbConnection db = new SqlConnection(_connectionString))
             {
                 await db.UpdateAsync(reservation);
+            }
+        }
+
+
+        public async Task<IEnumerable<UserProfileReservationViewModel>> GetFilteredReservationsAsync(int roomId, string? purpose, bool hideCancelled, int? loggedUserId)
+        {
+            using (IDbConnection db = new SqlConnection(_connectionString))
+            {
+
+                string sql = @"
+            SELECT 
+                r.Id, r.RoomId, r.StartTime, r.EndTime, r.Purpose, r.PersonCount, r.Status,
+                rm.Name AS RoomName
+            FROM Reservation r
+            INNER JOIN Room rm ON r.RoomId = rm.Id
+            WHERE 1=1 ";
+
+                var parameters = new DynamicParameters();
+
+
+                // room is selected (greater than 0)
+                if (roomId > 0)
+                {
+                    sql += " AND r.RoomId = @RoomId ";
+                    parameters.Add("@RoomId", roomId);
+                }
+
+                // purpose is not empty
+                if (!string.IsNullOrWhiteSpace(purpose))
+                {
+                    sql += " AND r.Purpose LIKE @Purpose ";
+                    parameters.Add("@Purpose", "%" + purpose + "%");
+                }
+
+                if (hideCancelled)
+                {
+                    sql += " AND r.Status = @ActiveStatus ";
+                    parameters.Add("@ActiveStatus", ReservationStatus.Active);
+                }
+
+                if (loggedUserId.HasValue)
+                {
+                    sql += " AND r.OrganizerId = @OrganizerId ";
+                    parameters.Add("@OrganizerId", loggedUserId.Value);
+                }
+                return await db.QueryAsync<UserProfileReservationViewModel>(sql, parameters);
             }
         }
     }
