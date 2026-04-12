@@ -47,7 +47,7 @@ namespace RoomReservationSystem.Controllers
         }
 
         [Authorize]
-        [HttpGet] 
+        [HttpPost]
         public async Task<IActionResult> CancelReservation(int id)
         {
             int loggedUserId = int.Parse(User.FindFirstValue("UserId"));
@@ -64,17 +64,17 @@ namespace RoomReservationSystem.Controllers
                 return Forbid(); // Return error 403
             }
 
-            // already cancelled, no need to do it again, just redirectback to profile
+            // already cancelled, no need to do it again
             if (reservation.Status == ReservationStatus.Cancelled)
             {
-                return RedirectToAction("Profile");
+                // success is true because the end result is the same
+                return Json(new { success = true, message = "Reservation was already canceled." });
             }
 
             reservation.Status = ReservationStatus.Cancelled;
             await _reservationRepository.UpdateReservationAsync(reservation);
 
-            TempData["SuccessMessage"] = "Reservation has been successfully canceled";
-            return RedirectToAction("Profile");
+            return Json(new { success = true, message = "Reservation canceled." });
         }
         [HttpPost]
         public async Task<IActionResult> Register(RegisterViewModel model)

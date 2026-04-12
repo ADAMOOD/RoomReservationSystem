@@ -1,8 +1,125 @@
 ﻿@{
-    ViewData["Title"] = "Home Page";
+    ViewData["Title"] = "Dashboard";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js'></script>
+
+<div class="p-5 mb-4 bg-light rounded-3 shadow-sm mt-4">
+    <div class="container-fluid py-2">
+        <h1 class="display-5 fw-bold">Room Reservation System</h1>
+        <p class="col-md-8 fs-4">
+            Welcome to the central dashboard. Browse the calendar below to see all scheduled events across the facility, or use the filters to find specific availability.
+        </p>
+        @if (!User.Identity.IsAuthenticated)
+        {
+            <a asp-controller="Account" asp-action="Login" class="btn btn-primary btn-lg">Log in to book a room</a>
+        }
+    </div>
 </div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-dark text-white">
+        <h5 class="mb-0">Filter Calendar</h5>
+    </div>
+    <div class="card-body">
+        <form id="filterForm" class="row g-3">
+
+            <div class="col-md-4">
+                <label for="roomSelect" class="form-label">Select Room</label>
+                <select id="roomSelect" class="form-select">
+                    <option value="0" selected>All Rooms</option>
+                    <option value="1">Room No. Aula</option>
+                    <option value="2">Room No. EB214</option>
+                </select>
+            </div>
+
+            <div class="col-md-4">
+                <label for="searchPurpose" class="form-label">Search by Purpose</label>
+                <input type="text" class="form-control" id="searchPurpose" placeholder="e.g., Meeting, Exam...">
+            </div>
+
+            <div class="col-md-4 d-flex flex-column justify-content-end pb-2">
+
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="hideCancelled" checked>
+                    <label class="form-check-label text-muted" for="hideCancelled">
+                        Hide Cancelled Reservations
+                    </label>
+                </div>
+
+                @if (User.Identity.IsAuthenticated)
+                {
+                    <div class="form-check mt-1">
+                        <input class="form-check-input" type="checkbox" id="onlyMyReservations">
+                        <label class="form-check-label fw-bold text-primary" for="onlyMyReservations">
+                            Show ONLY my reservations
+                        </label>
+                    </div>
+                }
+
+            </div>
+
+            <div class="col-12 mt-3">
+                <button type="button" id="applyFiltersBtn" class="btn btn-secondary w-100">Apply Filters</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card shadow-sm mb-5">
+    <div class="card-body">
+        <div id="global-calendar"></div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+
+        var calendarEl = document.getElementById('global-calendar');
+
+        // Inicializace kalendáře
+        var calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'timeGridWeek',
+            height: 650,
+            headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'dayGridMonth,timeGridWeek,timeGridDay'
+            },
+            // ZDE PŘIJDE MAGIE: Místo statické URL použijeme funkci,
+            // která si před každým načtením dat přečte hodnoty z filtru!
+            events: function(fetchInfo, successCallback, failureCallback) {
+
+                // 1. Získáme aktuální hodnoty z našeho filtru
+                var roomId = document.getElementById('roomSelect').value;
+                var purpose = document.getElementById('searchPurpose').value;
+                var hideCancelled = document.getElementById('hideCancelled').checked;
+
+                // U checkboxu pro "moje rezervace" musíme ověřit, jestli na stránce vůbec existuje
+                var onlyMyCheckbox = document.getElementById('onlyMyReservations');
+                var onlyMine = onlyMyCheckbox ? onlyMyCheckbox.checked : false;
+
+                // 2. Sestavíme URL pro náš budoucí API endpoint (zatím neexistuje)
+                var apiUrl = `/Api/GetGlobalEvents?roomId=${roomId}&purpose=${purpose}&hideCancelled=${hideCancelled}&onlyMine=${onlyMine}`;
+
+                // 3. Pošleme požadavek na server
+                fetch(apiUrl)
+                    .then(response => response.json())
+                    .then(data => {
+                        successCallback(data); // Předáme data FullCalendaru k vykreslení
+                    })
+                    .catch(error => {
+                        console.error("Error occured when loading a calendar:", error);
+                        failureCallback(error);
+                    });
+            }
+        });
+
+        calendar.render();
+
+        // 4. Když uživatel klikne na "Apply Filters", donutíme kalendář načíst data znovu
+        document.getElementById('applyFiltersBtn').addEventListener('click', function() {
+            calendar.refetchEvents();
+        });
+    });
+</script>

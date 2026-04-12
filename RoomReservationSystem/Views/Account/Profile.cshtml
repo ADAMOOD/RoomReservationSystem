@@ -8,81 +8,180 @@
 
 <div class="container mt-5">
     <h2 class="mb-4">My reservations</h2>
+
     @if (TempData["ErrorMessage"] != null)
     {
-	    <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
-		    <strong>Oops!</strong> @TempData["ErrorMessage"]
-		    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-	    </div>
+        <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
+            <strong>Oops!</strong> @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
     }
 
     @if (TempData["SuccessMessage"] != null)
     {
-	    <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
-		    <strong>Great!</strong> @TempData["SuccessMessage"]
-		    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-	    </div>
-    }
-
-    @if (!Model.Any())
-    {
-        <div class="alert alert-info shadow-sm p-4 text-center">
-            <h4>Nothing Here</h4>
-            <p>You don't have any reservations created.</p>
-            <a asp-controller="WebRooms" asp-action="Index" class="btn btn-primary mt-3">View Available Rooms</a>
+        <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
+            <strong>Great!</strong> @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     }
-    else
-    {
-        <div class="card shadow-sm">
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover table-striped mb-0">
-                        <thead class="table-dark">
-                            <tr>
-                                <th>Room</th>
-                                <th>Purpose</th>
-                                <th>From</th>
-                                <th>To</th>
-                                <th>Number of People</th>
-                                <th>Status</th>
-                                <th>Actions</th>
+
+    @{
+        var activeReservations = Model.Where(r => r.Status == ReservationStatus.Active && r.EndTime >= DateTime.Now);
+        var historyReservations = Model.Where(r => r.Status == ReservationStatus.Cancelled || r.EndTime < DateTime.Now);
+    }
+
+    <h4 class="mt-4 mb-3 text-primary">Active & Upcoming</h4>
+
+    <div id="active-empty-state" class="alert alert-light border shadow-sm p-4 text-center text-muted @(activeReservations.Any() ? "d-none" : "")">
+        <p class="mb-0">You don't have any upcoming reservations.</p>
+        <a asp-controller="WebRooms" asp-action="Index" class="btn btn-sm btn-primary mt-3">Book a Room</a>
+    </div>
+
+    <div id="active-table-container" class="card shadow-sm mb-5 @(activeReservations.Any() ? "" : "d-none")">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-striped mb-0">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Room</th>
+                            <th>Purpose</th>
+                            <th>From</th>
+                            <th>To</th>
+                            <th>Number of People</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="active-tbody">
+                        @foreach (var reservation in activeReservations)
+                        {
+                            <tr id="row-@reservation.Id">
+                                <td class="align-middle fw-bold">@reservation.RoomName</td>
+                                <td class="align-middle">@reservation.Purpose</td>
+                                <td class="align-middle">@reservation.StartTime.ToString("g")</td>
+                                <td class="align-middle">@reservation.EndTime.ToString("g")</td>
+                                <td class="align-middle">@reservation.PersonCount</td>
+                                <td class="align-middle">
+                                    <span class="badge bg-success">Active</span>
+                                </td>
+                                <td class="align-middle">
+                                    <button type="button" class="btn btn-sm btn-outline-danger cancel-btn" data-id="@reservation.Id">Cancel</button>
+                                </td>
                             </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var reservation in Model)
-                            {
-                                <tr>
-                                    <td class="align-middle fw-bold">@reservation.RoomName</td>
-                                    <td class="align-middle">@reservation.Purpose</td>
-
-                                    <td class="align-middle">@reservation.StartTime.ToString("g")</td>
-                                    <td class="align-middle">@reservation.EndTime.ToString("g")</td>
-                                    <td class="align-middle">@reservation.PersonCount</td>
-
-                                    <td class="align-middle">
-                                        @if (reservation.Status == ReservationStatus.Active)
-                                        {
-                                            <span class="badge bg-success">Active</span>
-                                        }
-                                        else
-                                        {
-                                            <span class="badge bg-secondary">Cancelled</span>
-                                        }
-                                    </td>
-
-                                    <td class="align-middle">
-                                        @if (reservation.Status == ReservationStatus.Active)
-                                        {
-                                            <a asp-action="CancelReservation" asp-route-id="@reservation.Id" class="btn btn-sm btn-outline-danger">Cancel</a>
-                                        }
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                </div>
+                        }
+                    </tbody>
+                </table>
             </div>
         </div>
-    }
+    </div>
+
+    <h4 class="mt-5 mb-3 text-secondary">History</h4>
+
+    <div id="history-empty-state" class="alert alert-light border shadow-sm p-3 text-center text-muted @(historyReservations.Any() ? "d-none" : "")">
+        <p class="mb-0 small">Your history is empty.</p>
+    </div>
+
+    <div id="history-table-container" class="card shadow-sm mb-5 opacity-75 @(historyReservations.Any() ? "" : "d-none")">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-sm table-hover mb-0">
+                    <thead class="table-secondary">
+                        <tr>
+                            <th>Room</th>
+                            <th>Purpose</th>
+                            <th>From</th>
+                            <th>To</th>
+                            <th>Number of People</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-tbody">
+                        @foreach (var reservation in historyReservations)
+                        {
+                            <tr>
+                                <td class="align-middle fw-bold">@reservation.RoomName</td>
+                                <td class="align-middle">@reservation.Purpose</td>
+                                <td class="align-middle">@reservation.StartTime.ToString("g")</td>
+                                <td class="align-middle">@reservation.EndTime.ToString("g")</td>
+                                <td class="align-middle">@reservation.PersonCount</td>
+                                <td class="align-middle">
+                                    @if (reservation.Status == ReservationStatus.Cancelled)
+                                    {
+                                        <span class="badge bg-secondary">Cancelled</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-info text-dark">Completed</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+
+        const cancelButtons = document.querySelectorAll('.cancel-btn');
+
+        cancelButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const reservationId = this.getAttribute('data-id');
+
+                if (!confirm('Do you really want to cancel this reservation?')) {
+                    return;
+                }
+
+                // disable clicking of the button
+                this.disabled = true;
+                this.innerHTML = "Cancelling...";
+
+                fetch(`/Account/CancelReservation/${reservationId}`, {
+                    method: 'POST'
+                })
+                .then(response => response.json()) // Expecting JSON response
+                .then(data => {
+                    if (data.success) {
+                        const row = document.getElementById(`row-${reservationId}`);
+
+                        // change badge to canceled
+                        const badge = row.querySelector('.badge');
+                        badge.className = 'badge bg-secondary';
+                        badge.innerHTML = 'Cancelled';
+
+                        // table history doesnt have collumn action so we have to remove it
+                        row.lastElementChild.remove();
+                        document.getElementById('history-tbody').prepend(row);
+
+                        // 5. Zviditelníme tabulku historie a skryjeme hlášku "empty"
+                        document.getElementById('history-table-container').classList.remove('d-none');
+                        document.getElementById('history-empty-state').classList.add('d-none');
+
+                        // 6. Zkontrolujeme aktivní tabulku. Pokud nezbyl žádný řádek...
+                        const activeTbody = document.getElementById('active-tbody');
+                        if (activeTbody.children.length === 0) {
+                            // ... skryjeme aktivní tabulku a ukážeme hlášku pro prázdný stav
+                            document.getElementById('active-table-container').classList.add('d-none');
+                            document.getElementById('active-empty-state').classList.remove('d-none');
+                        }
+
+                    } else {
+                        alert("Something went wrong: " + data.message);
+                        this.disabled = false;
+                        this.innerHTML = "Cancel";
+                    }
+                })
+                .catch(error => {
+                    console.error("AJAX error:", error);
+                    alert("An error occurred while communicating with the server.");
+                    this.disabled = false;
+                    this.innerHTML = "Cancel";
+                });
+            });
+        });
+    });
+</script>
