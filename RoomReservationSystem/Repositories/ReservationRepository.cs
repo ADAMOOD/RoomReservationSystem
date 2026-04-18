@@ -3,6 +3,7 @@ using Microsoft.Data.SqlClient;
 using RoomReservatingSystem.Shared;
 using RoomReservationSystem.ViewModels;
 using System.Data;
+using System.Data.Common;
 using System.Runtime.CompilerServices;
 
 namespace RoomReservationSystem.Repositories
@@ -66,6 +67,14 @@ namespace RoomReservationSystem.Repositories
             using (IDbConnection db = new SqlConnection(_connectionString))
             {
                 await db.UpdateAsync(reservation);
+            }
+        }
+
+        public async Task<IEnumerable<Reservation>> GetReservationsAsync()
+        {
+            using (IDbConnection db = new SqlConnection(_connectionString))
+            {
+                return await db.GetListAsync<Reservation>();
             }
         }
 

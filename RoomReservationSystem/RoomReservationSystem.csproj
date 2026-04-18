@@ -17,4 +17,10 @@
     <ProjectReference Include="..\RoomReservatingSystem.Shared\RoomReservatingSystem.Shared.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="init.sql">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

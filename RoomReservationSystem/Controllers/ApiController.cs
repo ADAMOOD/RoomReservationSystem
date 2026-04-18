@@ -10,9 +10,11 @@ namespace RoomReservationSystem.Controllers
     public class ApiController : ControllerBase
     {
         private readonly ReservationRepository _reservationRepository;
+
         public ApiController(ReservationRepository reservationRepository)
         {
             _reservationRepository = reservationRepository;
+
         }
         [HttpGet("Api/GetGlobalEvents")]
         public async Task<IActionResult> GetGlobalEvents(int roomId, string? purpose, bool hideCancelled, bool onlyMine)
@@ -36,5 +38,7 @@ namespace RoomReservationSystem.Controllers
 
             return Ok(calendarEvents);
         }
+
+
     }
 }

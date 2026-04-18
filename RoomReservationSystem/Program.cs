@@ -9,6 +9,11 @@ namespace RoomReservationSystem
         {
             var builder = WebApplication.CreateBuilder(args);
 
+            var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+
+
+            RoomReservationSystem.Data.DatabaseInitializer.EnsureDatabaseExists(connectionString);
+
             // Add services to the container.
             builder.Services.AddControllersWithViews();
 

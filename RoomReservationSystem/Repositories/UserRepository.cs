@@ -30,5 +30,12 @@ namespace RoomReservationSystem.Repositories
                 return await db.InsertAsync<User>(user);
             }
         }
+        public async Task<IEnumerable<User>> GetAllUsersAsync()
+        {
+            using (IDbConnection db = new SqlConnection(_connection))
+            {
+                return await db.GetListAsync<User>();
+            }
+        }
     }
 }
