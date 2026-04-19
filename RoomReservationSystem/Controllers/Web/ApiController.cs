@@ -4,7 +4,7 @@ using RoomReservatingSystem.Shared;
 using RoomReservationSystem.Repositories;
 using System.Security.Claims;
 
-namespace RoomReservationSystem.Controllers
+namespace RoomReservationSystem.Controllers.Web
 {
     [ApiController]
     public class ApiController : ControllerBase

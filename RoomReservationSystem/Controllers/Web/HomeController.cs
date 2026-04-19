@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using RoomReservationSystem.Models;
 using RoomReservationSystem.Repositories;
 
-namespace RoomReservationSystem.Controllers
+namespace RoomReservationSystem.Controllers.Web
 {
     public class HomeController : Controller
     {

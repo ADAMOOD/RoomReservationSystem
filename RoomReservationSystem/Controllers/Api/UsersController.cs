@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using RoomReservationSystem.Repositories;
 
-namespace RoomReservationSystem.Controllers
+namespace RoomReservationSystem.Controllers.Api
 {
     [ApiController]
     [Route("api/[controller]")]

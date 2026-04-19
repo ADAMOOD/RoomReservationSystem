@@ -5,7 +5,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 
-namespace RoomReservationSystem.Controllers
+namespace RoomReservationSystem.Controllers.Api
 {
     public class LoginRequest
     {

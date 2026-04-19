@@ -7,7 +7,7 @@ using RoomReservationSystem.ViewModels;
 using System.Reflection;
 using System.Security.Claims;
 
-namespace RoomReservationSystem.Controllers
+namespace RoomReservationSystem.Controllers.Web
 {
     public class AccountController : Controller
     {

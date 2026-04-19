@@ -7,7 +7,7 @@ using System.Diagnostics;
 using System.Security.Claims;
 using RoomReservatingSystem.Shared;
 
-namespace RoomReservationSystem.Controllers
+namespace RoomReservationSystem.Controllers.Web
 {
     public class WebRoomsController:Controller
     {
