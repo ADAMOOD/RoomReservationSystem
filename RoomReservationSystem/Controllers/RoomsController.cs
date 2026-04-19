@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using RoomReservatingSystem.Shared;
 using RoomReservationSystem.Repositories;
 
@@ -6,6 +7,7 @@ namespace RoomReservationSystem.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize(AuthenticationSchemes = "JwtBearer")]
     public class RoomsController : ControllerBase
     {
         private readonly RoomRepository _repository;

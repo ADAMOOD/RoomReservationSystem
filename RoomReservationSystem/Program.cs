@@ -1,5 +1,7 @@
 using RoomReservatingSystem.Shared;
 using RoomReservationSystem.Repositories;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 namespace RoomReservationSystem
 {
@@ -11,19 +13,36 @@ namespace RoomReservationSystem
 
             var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
-
             RoomReservationSystem.Data.DatabaseInitializer.EnsureDatabaseExists(connectionString);
 
             // Add services to the container.
             builder.Services.AddControllersWithViews();
 
-            builder.Services.AddAuthentication("Cookies")
-                .AddCookie("Cookies", options =>
+            builder.Services.AddAuthentication(options =>
+            {
+                options.DefaultScheme = "Cookies";
+            })
+            .AddCookie("Cookies", options =>
+            {
+                //Redirect if user tries to acces locked site
+                options.LoginPath = "/Account/Login";
+            })
+            .AddJwtBearer("JwtBearer", options =>
+            {
+                options.TokenValidationParameters = new TokenValidationParameters
                 {
-                    //Redirect if user tries to acces locked site
-                    options.LoginPath = "/Account/Login";
-                });
+                    ValidateIssuer = true,
+                    ValidateAudience = true,
+                    ValidateLifetime = true,
+                    ValidateIssuerSigningKey = true,
 
+                    
+                    ValidIssuer = builder.Configuration["Jwt:Issuer"],
+                    ValidAudience = builder.Configuration["Jwt:Audience"],
+
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"] ?? ""))
+                };
+            });
             builder.Services.AddScoped<RoomRepository>();
             builder.Services.AddScoped<UserRepository>();
             builder.Services.AddScoped<ReservationRepository>();
