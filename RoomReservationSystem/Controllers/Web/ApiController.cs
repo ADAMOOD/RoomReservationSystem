@@ -19,17 +19,23 @@ namespace RoomReservationSystem.Controllers.Web
         [HttpGet("Api/GetGlobalEvents")]
         public async Task<IActionResult> GetGlobalEvents(int roomId, string? purpose, bool hideCancelled, bool onlyMine)
         {
-            int? loggedUserId = null;
-            if (onlyMine && User.Identity != null && User.Identity.IsAuthenticated)
+            int? currentUserId = null;
+            if (User.Identity != null && User.Identity.IsAuthenticated)
             {
-                loggedUserId = int.Parse(User.FindFirstValue("UserId"));
+                currentUserId = int.Parse(User.FindFirstValue("UserId"));
             }
-            var reservations = await _reservationRepository.GetFilteredReservationsAsync(roomId, purpose, hideCancelled, loggedUserId);
+
+            int? filterId = null;
+            if (onlyMine)
+            {
+                filterId = currentUserId;
+            }
+            var reservations = await _reservationRepository.GetFilteredReservationsAsync(roomId, purpose, hideCancelled, filterId);
 
             var calendarEvents = reservations.Select(r => new
             {
                 id = r.Id,
-                title = $"{r.RoomName} ({r.Purpose})",
+                title = $"{r.RoomName} ({((currentUserId == null || r.OrganizerId != currentUserId) ? "Occupied" : r.Purpose)})",
 
                 start = r.StartTime.ToString("yyyy-MM-ddTHH:mm:ss"),
                 end = r.EndTime.ToString("yyyy-MM-ddTHH:mm:ss"),

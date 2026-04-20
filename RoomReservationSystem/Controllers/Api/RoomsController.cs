@@ -21,7 +21,7 @@ namespace RoomReservationSystem.Controllers.Api
             var rooms = await _repository.GetAllRoomsAsync();
             return Ok(rooms);
         }
-
+        [Authorize(Policy = "AdminOnly")]
         [HttpPost]
         public async Task<IActionResult> CreateRoomAsync([FromBody] Room newRoom)
         {

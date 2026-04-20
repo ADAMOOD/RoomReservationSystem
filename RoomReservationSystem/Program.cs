@@ -17,11 +17,18 @@ namespace RoomReservationSystem
 
             // Add services to the container.
             builder.Services.AddControllersWithViews();
+            builder.Services.AddAuthorization(options =>
+            {
+                // new policy defined for admin access
+                options.AddPolicy("AdminOnly", policy =>
+                    policy.RequireClaim("IsAdmin", "True"));
+            });
 
             builder.Services.AddAuthentication(options =>
-            {
-                options.DefaultScheme = "Cookies";
-            })
+                {
+                    options.DefaultScheme = "Cookies";
+
+                })
             .AddCookie("Cookies", options =>
             {
                 //Redirect if user tries to acces locked site
@@ -36,7 +43,7 @@ namespace RoomReservationSystem
                     ValidateLifetime = true,
                     ValidateIssuerSigningKey = true,
 
-                    
+
                     ValidIssuer = builder.Configuration["Jwt:Issuer"],
                     ValidAudience = builder.Configuration["Jwt:Audience"],
 

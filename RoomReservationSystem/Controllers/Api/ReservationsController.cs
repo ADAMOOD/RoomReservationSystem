@@ -15,7 +15,7 @@ namespace RoomReservationSystem.Controllers.Api
         {
             _reservationRepository = reservationRepository;
         }
-
+        [Authorize(Policy = "AdminOnly")]
         [HttpGet]
         public async Task<IActionResult> GetAllReservationsAsync()
         {

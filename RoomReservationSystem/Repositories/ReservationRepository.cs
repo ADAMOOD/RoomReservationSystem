@@ -86,7 +86,7 @@ namespace RoomReservationSystem.Repositories
 
                 string sql = @"
             SELECT 
-                r.Id, r.RoomId, r.StartTime, r.EndTime, r.Purpose, r.PersonCount, r.Status,
+                r.Id,r.OrganizerId, r.RoomId, r.StartTime, r.EndTime, r.Purpose, r.PersonCount, r.Status,
                 rm.Name AS RoomName
             FROM Reservation r
             INNER JOIN Room rm ON r.RoomId = rm.Id

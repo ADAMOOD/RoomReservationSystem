@@ -4,6 +4,7 @@ using RoomReservationSystem.Repositories;
 
 namespace RoomReservationSystem.Controllers.Api
 {
+    [Authorize(Policy = "AdminOnly")]
     [ApiController]
     [Route("api/[controller]")]
     [Authorize(AuthenticationSchemes = "JwtBearer")]

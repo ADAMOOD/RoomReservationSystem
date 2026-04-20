@@ -29,10 +29,15 @@ namespace RoomReservationSystem.Controllers.Web
         public async Task<IActionResult> GetRoomEvents(int roomId)
         {
             var reservations = await _reservationRepository.GetAllReservationsForRoomAsync(roomId);
+            int? currentUserId = null;
+            if (User.Identity != null && User.Identity.IsAuthenticated)
+            {
+                currentUserId = int.Parse(User.FindFirstValue("UserId"));
+            }
 
             var calendarEvents = reservations.Select(r => new
             {
-                title = r.Purpose,
+                title = (currentUserId==null||r.OrganizerId!=currentUserId)? "[Occupied]":r.Purpose,
                 start = r.StartTime.ToString("yyyy-MM-ddTHH:mm:ss"), // Important: ISO 8601 time format
                 end = r.EndTime.ToString("yyyy-MM-ddTHH:mm:ss"),
                 color = "#dc3545",
