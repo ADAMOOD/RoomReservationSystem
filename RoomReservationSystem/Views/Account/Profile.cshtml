@@ -26,8 +26,9 @@
     }
 
     @{
-        var activeReservations = Model.Where(r => r.Status == ReservationStatus.Active && r.EndTime >= DateTime.Now);
-        var historyReservations = Model.Where(r => r.Status == ReservationStatus.Cancelled || r.EndTime < DateTime.Now);
+        //TODO rozdelit na aktivni, prave probihajici a historicke
+        var activeReservations = Model.Where(r => r.Status == ReservationStatus.Active && r.StartTime >= DateTime.Now);
+        var historyReservations = Model.Where(r => r.Status == ReservationStatus.Cancelled || r.StartTime < DateTime.Now);
     }
 
     <h4 class="mt-4 mb-3 text-primary">Active & Upcoming</h4>

@@ -70,6 +70,10 @@ namespace RoomReservationSystem.Controllers.Web
                 // success is true because the end result is the same
                 return Json(new { success = true, message = "Reservation was already canceled." });
             }
+            if (reservation.StartTime <= DateTime.Now)//to ensure that reservation that already started cannot be canceled
+            {
+                return Json(new { success = false, message = "Cannot cancel a reservation that has already started." });
+            }
 
             reservation.Status = ReservationStatus.Cancelled;
             await _reservationRepository.UpdateReservationAsync(reservation);
