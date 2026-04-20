@@ -60,7 +60,7 @@ namespace RoomReservationSystem.Controllers.Api
             var tokenString = new JwtSecurityTokenHandler().WriteToken(token);
 
             // Send it back to the desktop application
-            return Ok(new { Token = tokenString });
+            return Ok(new { Token = tokenString, IsAdmin = user.IsAdmin });
         }
     }
 }
