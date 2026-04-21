@@ -26,19 +26,25 @@
     }
 
     @{
-        //TODO rozdelit na aktivni, prave probihajici a historicke
-        var activeReservations = Model.Where(r => r.Status == ReservationStatus.Active && r.StartTime >= DateTime.Now);
-        var historyReservations = Model.Where(r => r.Status == ReservationStatus.Cancelled || r.StartTime < DateTime.Now);
+        var now = DateTime.Now;
+        // 1. Plánované: Aktivní a začátek je v budoucnu
+        var scheduledReservations = Model.Where(r => r.Status == ReservationStatus.Active && r.StartTime > now);
+
+        // 2. Probíhající: Aktivní, už začaly a ještě neskončily
+        var ongoingReservations = Model.Where(r => r.Status == ReservationStatus.Active && r.StartTime <= now && r.EndTime >= now);
+
+        // 3. Historie: Zrušené NEBO ty, co už reálně skončily
+        var historyReservations = Model.Where(r => r.Status == ReservationStatus.Cancelled || r.EndTime < now);
     }
 
-    <h4 class="mt-4 mb-3 text-primary">Active & Upcoming</h4>
+    <h4 class="mt-4 mb-3 text-primary">Scheduled</h4>
 
-    <div id="active-empty-state" class="alert alert-light border shadow-sm p-4 text-center text-muted @(activeReservations.Any() ? "d-none" : "")">
+    <div id="active-empty-state" class="alert alert-light border shadow-sm p-4 text-center text-muted @(scheduledReservations.Any() ? "d-none" : "")">
         <p class="mb-0">You don't have any upcoming reservations.</p>
         <a asp-controller="WebRooms" asp-action="Index" class="btn btn-sm btn-primary mt-3">Book a Room</a>
     </div>
 
-    <div id="active-table-container" class="card shadow-sm mb-5 @(activeReservations.Any() ? "" : "d-none")">
+    <div id="active-table-container" class="card shadow-sm mb-5 @(scheduledReservations.Any() ? "" : "d-none")">
         <div class="card-body p-0">
             <div class="table-responsive">
                 <table class="table table-hover table-striped mb-0">
@@ -54,19 +60,61 @@
                         </tr>
                     </thead>
                     <tbody id="active-tbody">
-                        @foreach (var reservation in activeReservations)
+                        @foreach (var reservation in scheduledReservations)
                         {
-                            <tr id="row-@reservation.Id">
+                            <tr id="row-@reservation.Id" class="live-row" data-start="@reservation.StartTime.ToString("o")" data-end="@reservation.EndTime.ToString("o")">
                                 <td class="align-middle fw-bold">@reservation.RoomName</td>
                                 <td class="align-middle">@reservation.Purpose</td>
                                 <td class="align-middle">@reservation.StartTime.ToString("g")</td>
                                 <td class="align-middle">@reservation.EndTime.ToString("g")</td>
                                 <td class="align-middle">@reservation.PersonCount</td>
-                                <td class="align-middle">
+                                <td class="align-middle status-cell">
                                     <span class="badge bg-success">Active</span>
                                 </td>
-                                <td class="align-middle">
+                                <td class="align-middle action-cell">
                                     <button type="button" class="btn btn-sm btn-outline-danger cancel-btn" data-id="@reservation.Id">Cancel</button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <h4 class="mt-5 mb-3 text-warning">Ongoing</h4>
+
+    <div id="inprogress-empty-state" class="alert alert-light border shadow-sm p-4 text-center text-muted @(ongoingReservations.Any() ? "d-none" : "")">
+        <p class="mb-0">You don't have any reservations running right now.</p>
+    </div>
+
+    <div id="inprogress-table-container" class="card shadow-sm mb-5 @(ongoingReservations.Any() ? "" : "d-none")">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-striped mb-0">
+                    <thead class="table-warning">
+                        <tr>
+                            <th>Room</th>
+                            <th>Purpose</th>
+                            <th>From</th>
+                            <th>To</th>
+                            <th>Number of People</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="inprogress-tbody">
+                        @foreach (var reservation in ongoingReservations)
+                        {
+                            <tr id="row-@reservation.Id" class="live-row" data-start="@reservation.StartTime.ToString("o")" data-end="@reservation.EndTime.ToString("o")">
+                                <td class="align-middle fw-bold">@reservation.RoomName</td>
+                                <td class="align-middle">@reservation.Purpose</td>
+                                <td class="align-middle">@reservation.StartTime.ToString("g")</td>
+                                <td class="align-middle">@reservation.EndTime.ToString("g")</td>
+                                <td class="align-middle">@reservation.PersonCount</td>
+                                <td class="align-middle status-cell" style="min-width: 150px;">
+                                    <div class="progress w-100" style="height: 20px;">
+                                        <div class="progress-bar bg-warning progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%;">&nbsp;</div>
+                                    </div>
                                 </td>
                             </tr>
                         }
@@ -99,13 +147,13 @@
                     <tbody id="history-tbody">
                         @foreach (var reservation in historyReservations)
                         {
-                            <tr>
+                            <tr id="row-@reservation.Id">
                                 <td class="align-middle fw-bold">@reservation.RoomName</td>
                                 <td class="align-middle">@reservation.Purpose</td>
                                 <td class="align-middle">@reservation.StartTime.ToString("g")</td>
                                 <td class="align-middle">@reservation.EndTime.ToString("g")</td>
                                 <td class="align-middle">@reservation.PersonCount</td>
-                                <td class="align-middle">
+                                <td class="align-middle status-cell">
                                     @if (reservation.Status == ReservationStatus.Cancelled)
                                     {
                                         <span class="badge bg-secondary">Cancelled</span>
@@ -125,12 +173,89 @@
 </div>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
 
+        // --- 1. ČÁST: HLÍDAČ ČASU (PROGRESS BAR A PŘESUNY) ---
+        function updateLiveReservations() {
+            const now = new Date();
+
+            document.querySelectorAll('.live-row').forEach(row => {
+                const start = new Date(row.dataset.start);
+                const end = new Date(row.dataset.end);
+                const currentTbodyId = row.closest('tbody').id;
+
+                // 1. Z UPCOMING DO IN PROGRESS
+                if (now >= start && now < end && currentTbodyId === 'active-tbody') {
+                    // Smazat sloupec s tlačítkem Cancel
+                    const actionCell = row.querySelector('.action-cell');
+                    if (actionCell) actionCell.remove();
+
+                    // Přidat Progress Bar
+                    row.querySelector('.status-cell').innerHTML = `
+                        <div class="progress" style="height: 20px;">
+                            <div class="progress-bar bg-warning progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%;"></div>
+                        </div>`;
+
+                    // Přesun
+                    document.getElementById('inprogress-tbody').appendChild(row);
+                    document.getElementById('inprogress-table-container').classList.remove('d-none');
+                    document.getElementById('inprogress-empty-state').classList.add('d-none');
+
+                    checkEmptyTables();
+                }
+
+                // 2. Z IN PROGRESS DO HISTORY
+                if (now >= end && currentTbodyId === 'inprogress-tbody') {
+                    // Přepsat Progress bar na Completed badge
+                    row.querySelector('.status-cell').innerHTML = '<span class="badge bg-info text-dark">Completed</span>';
+
+                    // Přesun
+                    document.getElementById('history-tbody').prepend(row);
+                    document.getElementById('history-table-container').classList.remove('d-none');
+                    document.getElementById('history-empty-state').classList.add('d-none');
+
+                    checkEmptyTables();
+                    row.classList.remove('live-row'); // V historii už to nesledujeme
+                }
+
+                // 3. AKTUALIZACE PROGRESS BARU
+                if (currentTbodyId === 'inprogress-tbody') {
+                    const total = end - start;
+                    const elapsed = now - start;
+                    let percent = (elapsed / total) * 100;
+                    percent = Math.min(Math.max(percent, 0), 100); // Drží to mezi 0 a 100
+
+                    const bar = row.querySelector('.progress-bar');
+                    if (bar) {
+                        bar.style.width = percent + "%";
+                        
+                    }
+                }
+            });
+        }
+
+        // Pomocná funkce na skrytí prázdných tabulek
+        function checkEmptyTables() {
+            if (document.getElementById('active-tbody').children.length === 0) {
+                document.getElementById('active-table-container').classList.add('d-none');
+                document.getElementById('active-empty-state').classList.remove('d-none');
+            }
+            if (document.getElementById('inprogress-tbody').children.length === 0) {
+                document.getElementById('inprogress-table-container').classList.add('d-none');
+                document.getElementById('inprogress-empty-state').classList.remove('d-none');
+            }
+        }
+
+        // Spustit ihned a pak každou sekundu
+        updateLiveReservations();
+        setInterval(updateLiveReservations, 1000);
+
+
+        // --- 2. ČÁST: AJAX PRO MAZÁNÍ ---
         const cancelButtons = document.querySelectorAll('.cancel-btn');
 
         cancelButtons.forEach(button => {
-            button.addEventListener('click', function() {
+            button.addEventListener('click', function () {
                 const reservationId = this.getAttribute('data-id');
 
                 if (!confirm('Do you really want to cancel this reservation?')) {
@@ -144,44 +269,47 @@
                 fetch(`/Account/CancelReservation/${reservationId}`, {
                     method: 'POST'
                 })
-                .then(response => response.json()) // Expecting JSON response
-                .then(data => {
-                    if (data.success) {
-                        const row = document.getElementById(`row-${reservationId}`);
+                    .then(response => response.json()) // Expecting JSON response
+                    .then(data => {
+                        if (data.success) {
+                            const row = document.getElementById(`row-${reservationId}`);
 
-                        // change badge to canceled
-                        const badge = row.querySelector('.badge');
-                        badge.className = 'badge bg-secondary';
-                        badge.innerHTML = 'Cancelled';
+                            // Zastavit živé sledování, protože rezervace je zrušena
+                            row.classList.remove('live-row');
 
-                        // table history doesnt have collumn action so we have to remove it
-                        row.lastElementChild.remove();
-                        document.getElementById('history-tbody').prepend(row);
+                            // change badge to canceled
+                            const statusCell = row.querySelector('.status-cell');
+                            if(statusCell) {
+                                statusCell.innerHTML = '<span class="badge bg-secondary">Cancelled</span>';
+                            }
 
-                        // 5. Zviditelníme tabulku historie a skryjeme hlášku "empty"
-                        document.getElementById('history-table-container').classList.remove('d-none');
-                        document.getElementById('history-empty-state').classList.add('d-none');
+                            // table history doesnt have collumn action so we have to remove it
+                            const actionCell = row.querySelector('.action-cell');
+                            if (actionCell) {
+                                actionCell.remove();
+                            }
 
-                        // 6. Zkontrolujeme aktivní tabulku. Pokud nezbyl žádný řádek...
-                        const activeTbody = document.getElementById('active-tbody');
-                        if (activeTbody.children.length === 0) {
-                            // ... skryjeme aktivní tabulku a ukážeme hlášku pro prázdný stav
-                            document.getElementById('active-table-container').classList.add('d-none');
-                            document.getElementById('active-empty-state').classList.remove('d-none');
+                            document.getElementById('history-tbody').prepend(row);
+
+                            // 5. Zviditelníme tabulku historie a skryjeme hlášku "empty"
+                            document.getElementById('history-table-container').classList.remove('d-none');
+                            document.getElementById('history-empty-state').classList.add('d-none');
+
+                            // 6. Zkontrolujeme aktivní tabulku
+                            checkEmptyTables();
+
+                        } else {
+                            alert("Something went wrong: " + data.message);
+                            this.disabled = false;
+                            this.innerHTML = "Cancel";
                         }
-
-                    } else {
-                        alert("Something went wrong: " + data.message);
+                    })
+                    .catch(error => {
+                        console.error("AJAX error:", error);
+                        alert("An error occurred while communicating with the server.");
                         this.disabled = false;
                         this.innerHTML = "Cancel";
-                    }
-                })
-                .catch(error => {
-                    console.error("AJAX error:", error);
-                    alert("An error occurred while communicating with the server.");
-                    this.disabled = false;
-                    this.innerHTML = "Cancel";
-                });
+                    });
             });
         });
     });
