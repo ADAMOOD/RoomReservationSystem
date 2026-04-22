@@ -19,8 +19,9 @@ namespace RoomReservationSystem.Controllers.Api
         [HttpGet]
         public async Task<IActionResult> GetAllReservationsAsync()
         {
-            var reservations = await _reservationRepository.GetReservationsAsync();
+            var reservations = await _reservationRepository.GetReservationDTOsAsync();
             return Ok(reservations);
         }
+
     }
 }

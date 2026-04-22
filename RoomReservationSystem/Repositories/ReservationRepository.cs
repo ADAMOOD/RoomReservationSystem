@@ -5,6 +5,7 @@ using RoomReservationSystem.ViewModels;
 using System.Data;
 using System.Data.Common;
 using System.Runtime.CompilerServices;
+using RoomReservatingSystem.Shared.DTOs;
 
 namespace RoomReservationSystem.Repositories
 {
@@ -78,6 +79,21 @@ namespace RoomReservationSystem.Repositories
             }
         }
 
+        public async Task<IEnumerable<ReservationDTO>> GetReservationDTOsAsync()
+        {
+            using (IDbConnection db = new SqlConnection(_connectionString))
+            {
+                string sql = @"
+                SELECT 
+                    r.Id, r.RoomId, r.OrganizerId, r.StartTime, r.EndTime, r.Purpose, r.PersonCount, r.Status,
+                    rm.Name AS RoomName, u.UserName AS UserName
+                FROM Reservation r
+                INNER JOIN Room rm ON r.RoomId = rm.Id
+                INNER JOIN [User] u ON r.OrganizerId = u.Id";
+
+                return (await db.QueryAsync<ReservationDTO>(sql)).ToList();
+            }
+        }
 
         public async Task<IEnumerable<UserProfileReservationViewModel>> GetFilteredReservationsAsync(int roomId, string? purpose, bool hideCancelled, int? loggedUserId)
         {

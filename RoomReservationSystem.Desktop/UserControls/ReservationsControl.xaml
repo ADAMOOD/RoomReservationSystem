@@ -7,8 +7,63 @@
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
     <Grid>
-            <DataGrid x:Name="ReservationsDG" AutoGenerateColumns="True">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
 
-            </DataGrid>
+        <TextBlock Grid.Row="0" Text="Rooms" FontSize="22" FontWeight="SemiBold" Margin="10,10,10,0" Foreground="#333333"/>
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="10,0,10,15">
+            <TextBlock Text="Show Columns:" FontWeight="SemiBold" Foreground="#4B5563" VerticalAlignment="Center" Margin="0,0,15,0" />
+            <CheckBox Content="Room name" x:Name="ShowRoomNameCB" Tag="RoomName" Click="Checkbox_Click" Margin="0,0,15,0" VerticalAlignment="Center"/>
+            <CheckBox Content="UserName" Tag="UserName" x:Name="ShowUserNameCB" Click="Checkbox_Click" Margin="0,0,0,0" VerticalAlignment="Center"/>
+        </StackPanel>
+
+        <Border Grid.Row="2" Background="#F9FAFB" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="5" Margin="10,0,10,15" Padding="10">
+            <WrapPanel Orientation="Horizontal">
+
+                <StackPanel Margin="0,0,20,10">
+                    <TextBlock Text="Room (ID/Name)" FontSize="12" Foreground="#6B7280" Margin="0,0,0,5" />
+                    <TextBox x:Name="FilterRoomTB" Width="200" Padding="6" BorderBrush="#D1D5DB" BorderThickness="1" TextChanged="Filter_TextChanged"/>
+                </StackPanel>
+
+                <StackPanel Margin="0,0,20,10">
+                    <TextBlock Text="User (ID/Name)" FontSize="12" Foreground="#6B7280" Margin="0,0,0,5" />
+                    <TextBox x:Name="FilterUserTB" Width="200" Padding="6" BorderBrush="#D1D5DB" BorderThickness="1" TextChanged="Filter_TextChanged"/>
+                </StackPanel>
+
+                <StackPanel Margin="0,0,0,10">
+                    <TextBlock Text="Purpose" FontSize="12" Foreground="#6B7280" Margin="0,0,0,5" />
+                    <TextBox x:Name="FilterPurposeTB" Width="200" Padding="6" BorderBrush="#D1D5DB" BorderThickness="1" TextChanged="Filter_TextChanged"/>
+                </StackPanel>
+
+            </WrapPanel>
+        </Border>
+
+        <DataGrid x:Name="ReservationsDG"
+                  Grid.Row="3" 
+                  AutoGenerateColumns="True" 
+                  Margin="10,10,10,15"
+                  AutoGeneratingColumn="ReservationsDG_OnAutoGeneratingColumn"
+                  IsReadOnly="True" 
+                  CanUserAddRows="False" 
+                  CanUserDeleteRows="False" 
+
+                  SelectionMode="Extended" 
+                  SelectionUnit="FullRow" 
+
+                  HeadersVisibility="Column" 
+                  AlternatingRowBackground="#FFF7F9FA" 
+                  RowBackground="White"
+                  BorderBrush="#DDDDDD" 
+                  BorderThickness="1"
+                  HorizontalGridLinesBrush="#EEEEEE"
+                  VerticalGridLinesBrush="Transparent"
+                  SelectedCellsChanged="ReservationsDG_OnSelectedCellsChanged"
+                  ColumnWidth="*">
+        </DataGrid>
     </Grid>
 </UserControl>

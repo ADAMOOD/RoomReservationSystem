@@ -102,8 +102,10 @@ namespace RoomReservationSystem.Desktop.UserControls.Dialogs
             {
                 TextBox newTb = new TextBox
                 {
-                    Padding = new Thickness(5),
-                    Margin = new Thickness(0, 0, 0, 5)
+                    Padding = new Thickness(8),
+                    Margin = new Thickness(0, 0, 0, 5),
+                    BorderThickness = new Thickness(1),
+                    BorderBrush = new System.Windows.Media.SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#D1D5DB"))
                 };
 
                 newTb.TextChanged += EquipmentTB_TextChanged;
