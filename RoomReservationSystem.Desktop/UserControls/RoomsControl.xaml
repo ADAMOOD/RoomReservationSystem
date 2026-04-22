@@ -5,10 +5,50 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:RoomReservationSystem.Desktop.UserControls"
              mc:Ignorable="d" 
-             d:DesignHeight="450" d:DesignWidth="800">
+             d:DesignHeight="450" d:DesignWidth="800"
+             Background="White">
     <Grid>
-        <DataGrid x:Name="RoomsDG" AutoGenerateColumns="True">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
 
+        <TextBlock Grid.Row="0" Text="Rooms" FontSize="22" FontWeight="SemiBold" Margin="10,10,10,0" Foreground="#333333"/>
+
+        <DataGrid x:Name="RoomsDG" 
+                  Grid.Row="1" 
+                  AutoGenerateColumns="True" 
+                  Margin="10,10,10,15"
+                  
+                  IsReadOnly="True" 
+                  CanUserAddRows="False" 
+                  CanUserDeleteRows="False" 
+                  
+                  SelectionMode="Extended" 
+                  SelectionUnit="FullRow" 
+                  
+                  HeadersVisibility="Column" 
+                  AlternatingRowBackground="#FFF7F9FA" 
+                  RowBackground="White"
+                  BorderBrush="#DDDDDD" 
+                  BorderThickness="1"
+                  HorizontalGridLinesBrush="#EEEEEE"
+                  VerticalGridLinesBrush="Transparent"
+                  SelectedCellsChanged="RoomsDG_OnSelectedCellsChanged"
+                  ColumnWidth="*"
+                  >
         </DataGrid>
+
+        <Grid Grid.Row="2" Margin="10,0,10,10">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+                <Button Content="Add new rooms" Click="AddButton_Click" Padding="15,8" MinWidth="130" Background="#0078D7" Foreground="White" BorderThickness="0" Cursor="Hand" />
+            </StackPanel>
+
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button x:Name="editBTN" IsEnabled="False" Content="Edit " Click="EditButton_Click" Padding="15,8" MinWidth="130" Margin="0,0,10,0" Cursor="Hand" />
+                <Button x:Name="deleteBTN" Content="Delete" IsEnabled="False"  Click="DeleteButton_Click" Padding="15,8" MinWidth="130" Background="#D13438" Foreground="White" BorderThickness="0" Cursor="Hand" />
+            </StackPanel>
+        </Grid>
     </Grid>
 </UserControl>

@@ -192,9 +192,9 @@
 
                     // Přidat Progress Bar
                     row.querySelector('.status-cell').innerHTML = `
-                        <div class="progress" style="height: 20px;">
-                            <div class="progress-bar bg-warning progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%;"></div>
-                        </div>`;
+                                                            <div class="progress w-100" style="height: 20px;">
+                                        <div class="progress-bar bg-warning progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%;">&nbsp;</div>
+                                    </div>`;
 
                     // Přesun
                     document.getElementById('inprogress-tbody').appendChild(row);
@@ -228,7 +228,7 @@
                     const bar = row.querySelector('.progress-bar');
                     if (bar) {
                         bar.style.width = percent + "%";
-                        
+
                     }
                 }
             });

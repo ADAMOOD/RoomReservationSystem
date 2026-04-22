@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
 using System.Text;
 using System.Threading.Tasks;
-using System.Net.Http;
-
-using System.Net.Http.Headers;
 
 namespace RoomReservationSystem.Desktop.Services
 {
@@ -17,7 +17,6 @@ namespace RoomReservationSystem.Desktop.Services
         {
             get { return _httpClient; }
         }
-
         public ApiService()
         {
             _httpClient = new HttpClient();
