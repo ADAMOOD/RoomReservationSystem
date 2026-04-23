@@ -39,6 +39,25 @@
                     <TextBlock Text="Purpose" FontSize="12" Foreground="#6B7280" Margin="0,0,0,5" />
                     <TextBox x:Name="FilterPurposeTB" Width="200" Padding="6" BorderBrush="#D1D5DB" BorderThickness="1" TextChanged="Filter_TextChanged"/>
                 </StackPanel>
+                <Button x:Name="refreshBtn" Click="RefreshBtn_OnClick" Margin="10" Width="36" Height="36" Cursor="Hand" ToolTip="Obnovit data">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="btnBorder" Background="Transparent" CornerRadius="18" BorderBrush="#E5E7EB" BorderThickness="1">
+                                <Image Source="/UserControls/refreshIcon.png" Height="18" Width="18" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="btnBorder" Property="Background" Value="#F3F4F6"/>
+                                    <Setter TargetName="btnBorder" Property="BorderBrush" Value="#D1D5DB"/>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="True">
+                                    <Setter TargetName="btnBorder" Property="Background" Value="#E5E7EB"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Button.Template>
+                </Button>
 
             </WrapPanel>
         </Border>
@@ -65,5 +84,15 @@
                   SelectedCellsChanged="ReservationsDG_OnSelectedCellsChanged"
                   ColumnWidth="*">
         </DataGrid>
+        <Grid Grid.Row="4" Margin="10,0,10,10">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+                <Button Content="Create new reservation" Click="AddButton_Click" Padding="15,8" MinWidth="130" Background="#0078D7" Foreground="White" BorderThickness="0" Cursor="Hand" />
+            </StackPanel>
+
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button x:Name="editBTN" IsEnabled="False" Content="Edit " Click="EditButton_Click" Padding="15,8" MinWidth="130" Margin="0,0,10,0" Cursor="Hand" />
+                <Button x:Name="deleteBTN" Content="Delete" IsEnabled="False"  Click="DeleteButton_Click" Padding="15,8" MinWidth="130" Background="#D13438" Foreground="White" BorderThickness="0" Cursor="Hand" />
+            </StackPanel>
+        </Grid>
     </Grid>
 </UserControl>

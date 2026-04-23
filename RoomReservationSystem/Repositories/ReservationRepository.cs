@@ -95,6 +95,26 @@ namespace RoomReservationSystem.Repositories
             }
         }
 
+        public async Task<bool> DeleteReservationAsync(int id)
+        {
+            using (IDbConnection conncection = new SqlConnection(_connectionString))
+            {
+                try
+                {
+                    int deleted = await conncection.DeleteAsync<Reservation>(id);
+                    return deleted > 0;
+                }
+                catch (SqlException)
+                {
+                    return false;
+                }
+                catch (Exception)
+                {
+                    return false;
+                }
+
+            }
+        }
         public async Task<IEnumerable<UserProfileReservationViewModel>> GetFilteredReservationsAsync(int roomId, string? purpose, bool hideCancelled, int? loggedUserId)
         {
             using (IDbConnection db = new SqlConnection(_connectionString))
@@ -137,6 +157,26 @@ namespace RoomReservationSystem.Repositories
                     parameters.Add("@OrganizerId", loggedUserId.Value);
                 }
                 return await db.QueryAsync<UserProfileReservationViewModel>(sql, parameters);
+            }
+        }
+
+        internal async Task<bool> UpdateRoomAsync(Reservation updatedReservation)
+        {
+            using (IDbConnection db = new SqlConnection(_connectionString))
+            {
+                try
+                {
+                    int rowsAffected = await db.UpdateAsync<Reservation>(updatedReservation);
+                    return rowsAffected > 0;
+                }
+                catch (SqlException)
+                {
+                    return false;
+                }
+                catch (Exception)
+                {
+                    return false;
+                }
             }
         }
     }

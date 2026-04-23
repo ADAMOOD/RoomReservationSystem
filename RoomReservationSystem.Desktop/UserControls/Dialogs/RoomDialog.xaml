@@ -1,7 +1,7 @@
 ﻿<Window x:Class="RoomReservationSystem.Desktop.UserControls.Dialogs.RoomDialog"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Správa místností" Height="550" Width="450"
+        Title="Rooms management" Height="550" Width="450"
         WindowStartupLocation="CenterScreen"
         Background="#F3F4F6"
         FontFamily="Segoe UI">
@@ -15,8 +15,8 @@
 
                     <TextBlock Text="Room" FontSize="18" FontWeight="SemiBold" Foreground="#111827" Margin="0,0,0,15"/>
 
-                    <TextBlock Text="Room name" FontSize="13" FontWeight="SemiBold" Foreground="#4B5563" Margin="0,0,0,5" />
-                    <TextBox x:Name="RoomNameTB" Padding="8" Margin="0,0,0,15" BorderBrush="#D1D5DB" BorderThickness="1" />
+                    <TextBlock Text="Room name"  FontSize="13" FontWeight="SemiBold" Foreground="#4B5563" Margin="0,0,0,5" />
+                    <TextBox x:Name="RoomNameTB" Tag="Room name" Padding="8" Margin="0,0,0,15" BorderBrush="#D1D5DB" BorderThickness="1" />
 
                     <Grid Margin="0,0,0,15">
                         <Grid.ColumnDefinitions>
@@ -27,12 +27,12 @@
 
                         <StackPanel Grid.Column="0">
                             <TextBlock Text="Capacity" FontSize="13" FontWeight="SemiBold" Foreground="#4B5563" Margin="0,0,0,5" />
-                            <TextBox x:Name="CapacityTB" PreviewTextInput="NumberOnly_PreviewTextInput" Padding="8" BorderBrush="#D1D5DB" BorderThickness="1" />
+                            <TextBox x:Name="CapacityTB" Tag="Capacity" PreviewTextInput="NumberOnly_PreviewTextInput" Padding="8" BorderBrush="#D1D5DB" BorderThickness="1" />
                         </StackPanel>
 
                         <StackPanel Grid.Column="2">
                             <TextBlock Text="Max. time (minutes)" FontSize="13" FontWeight="SemiBold" Foreground="#4B5563" Margin="0,0,0,5" />
-                            <TextBox x:Name="MaxTimeTB" PreviewTextInput="NumberOnly_PreviewTextInput" Padding="8" BorderBrush="#D1D5DB" BorderThickness="1" />
+                            <TextBox x:Name="MaxTimeTB" Tag="Max. time" PreviewTextInput="NumberOnly_PreviewTextInput" Padding="8" BorderBrush="#D1D5DB" BorderThickness="1" />
                         </StackPanel>
                     </Grid>
 

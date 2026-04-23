@@ -52,7 +52,8 @@ namespace RoomReservationSystem.Desktop.UserControls
 
             var deletionRooms = selected.Cast<Room>().ToList();
             bool needsReload = false;
-
+            if (MessageBox.Show("This step is irreversible.", "Delete", MessageBoxButton.OKCancel, MessageBoxImage.Warning) != MessageBoxResult.OK)
+                return;
             foreach (var room in deletionRooms)
             {
                 try
