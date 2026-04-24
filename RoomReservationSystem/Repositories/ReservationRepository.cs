@@ -5,6 +5,7 @@ using RoomReservationSystem.ViewModels;
 using System.Data;
 using System.Data.Common;
 using System.Runtime.CompilerServices;
+using Microsoft.AspNetCore.Mvc;
 using RoomReservatingSystem.Shared.DTOs;
 
 namespace RoomReservationSystem.Repositories
@@ -159,7 +160,41 @@ namespace RoomReservationSystem.Repositories
                 return await db.QueryAsync<UserProfileReservationViewModel>(sql, parameters);
             }
         }
-
+        public async Task<bool> CheckCollisionAsync(int roomId, DateTime startTime, DateTime endTime, int? excludeReservationId = null)
+        {
+            using (IDbConnection db = new SqlConnection(_connectionString))
+            {
+                string sql = @"
+            SELECT COUNT(1) 
+            FROM Reservation 
+            WHERE RoomId = @RoomId 
+              AND Status = @ActiveStatus
+              AND StartTime < @EndTime 
+              AND EndTime > @StartTime";
+                var parameters = new DynamicParameters();
+                parameters.Add("@RoomId", roomId);
+                parameters.Add("@StartTime", startTime);
+                parameters.Add("@EndTime", endTime);
+                parameters.Add("@ActiveStatus", ReservationStatus.Active);
+                if (excludeReservationId.HasValue)
+                {
+                    sql += " AND Id != @ExcludeReservationId ";
+                    parameters.Add("@ExcludeReservationId", excludeReservationId.Value);
+                }
+                int count = await db.ExecuteScalarAsync<int>(sql, parameters);
+                return count > 0;
+            }
+        }
+        public async Task<bool> UpdateStatusAsync(int reservationId, ReservationStatus newStatus)
+        {
+            using (IDbConnection db = new SqlConnection(_connectionString))
+            {
+                string sql = "UPDATE Reservation SET Status = @Status WHERE Id = @Id";
+                var parameters = new { Status = newStatus, Id = reservationId };
+                int rowsAffected = await db.ExecuteAsync(sql, parameters);
+                return rowsAffected > 0;
+            }
+        }
         internal async Task<bool> UpdateRoomAsync(Reservation updatedReservation)
         {
             using (IDbConnection db = new SqlConnection(_connectionString))

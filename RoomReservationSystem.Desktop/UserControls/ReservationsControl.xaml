@@ -39,6 +39,7 @@
                     <TextBlock Text="Purpose" FontSize="12" Foreground="#6B7280" Margin="0,0,0,5" />
                     <TextBox x:Name="FilterPurposeTB" Width="200" Padding="6" BorderBrush="#D1D5DB" BorderThickness="1" TextChanged="Filter_TextChanged"/>
                 </StackPanel>
+
                 <Button x:Name="refreshBtn" Click="RefreshBtn_OnClick" Margin="10" Width="36" Height="36" Cursor="Hand" ToolTip="Obnovit data">
                     <Button.Template>
                         <ControlTemplate TargetType="Button">
@@ -58,9 +59,14 @@
                         </ControlTemplate>
                     </Button.Template>
                 </Button>
-
+                <StackPanel Orientation="Vertical" Margin="10,0,10,0">
+                    <Button Content="Activate" Click="activateBTN" Margin="0,0,0,10"/>
+                    <Button Content="Cancel" Click="canbcelBTN" />
+                </StackPanel>
             </WrapPanel>
+
         </Border>
+
 
         <DataGrid x:Name="ReservationsDG"
                   Grid.Row="3" 

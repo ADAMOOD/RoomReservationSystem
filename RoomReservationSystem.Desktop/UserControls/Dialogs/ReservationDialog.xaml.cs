@@ -18,18 +18,20 @@ namespace RoomReservationSystem.Desktop.UserControls.Dialogs
         private ApiService _apiService;
         private List<ReservationDTO> _reservations;
 
+        // ZDE SI BUDEME PAMATOVAT VŠECHNY EXISTUJÍCÍ REZERVACE Z DATABÁZE
+        private List<ReservationDTO> _existingDbReservations;
+
         private bool _isEditMode;
         private List<ReservationDTO> _originalReservationsToEdit;
 
         private int _currentEditingReservationId = 0;
-
-        // --- KONSTRUKTORY A START ---
 
         public ReservationDialog(ApiService apiService)
         {
             InitializeComponent();
             _apiService = apiService;
             _reservations = new List<ReservationDTO>();
+            _existingDbReservations = new List<ReservationDTO>();
             _isEditMode = false;
 
             this.Title = "Add New Reservation";
@@ -41,6 +43,7 @@ namespace RoomReservationSystem.Desktop.UserControls.Dialogs
             InitializeComponent();
             _apiService = apiService;
             _reservations = new List<ReservationDTO>();
+            _existingDbReservations = new List<ReservationDTO>();
             _originalReservationsToEdit = reservationsToEdit;
             _isEditMode = true;
 
@@ -63,8 +66,6 @@ namespace RoomReservationSystem.Desktop.UserControls.Dialogs
             }
         }
 
-        // --- NAČÍTÁNÍ A PŘÍPRAVA DAT ---
-
         private async Task LoadDropdownDataAsync()
         {
             try
@@ -72,12 +73,15 @@ namespace RoomReservationSystem.Desktop.UserControls.Dialogs
                 var rooms = await _apiService.Client.GetFromJsonAsync<List<Room>>("Api/Rooms");
                 var users = await _apiService.Client.GetFromJsonAsync<List<User>>("Api/Users");
 
+                // STÁHNEME SI VŠECHNY REZERVACE PRO KONTROLU KOLIZÍ
+                _existingDbReservations = await _apiService.Client.GetFromJsonAsync<List<ReservationDTO>>("Api/Reservations") ?? new List<ReservationDTO>();
+
                 RoomComboBox.ItemsSource = rooms;
                 UserComboBox.ItemsSource = users;
             }
             catch (Exception)
             {
-                MessageBox.Show("Network error while loading rooms and users. Please try again.", "Connection Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show("Network error while loading data. Please try again.", "Connection Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 this.Close();
             }
         }
@@ -118,6 +122,28 @@ namespace RoomReservationSystem.Desktop.UserControls.Dialogs
             };
         }
 
+        private bool HasTimeCollision(int roomId, DateTime start, DateTime end, int currentResId)
+        {
+
+            // 1. Kontrola proti uloženým datům (Musíme přeskočit sami sebe při editaci a ignorovat zrušené)
+            bool dbCollision = _existingDbReservations.Any(r =>
+                r.RoomId == roomId &&
+                r.Id != currentResId &&
+                r.Status == ReservationStatus.Active &&
+                start < r.EndTime && end > r.StartTime);
+
+            if (dbCollision) return true;
+
+            // 2. Kontrola proti draftům na levém panelu
+            // Protože se zrovna upravovaný záznam fyzicky dočasně odstraní z _reservations při načtení (v EditOverviewReservation_Click),
+            // kolekce _reservations obsahuje pouze *ostatní* drafty, což je naprosto dokonalé.
+            bool draftCollision = _reservations.Any(r =>
+                r.RoomId == roomId &&
+                start < r.EndTime && end > r.StartTime);
+
+            return draftCollision;
+        }
+
         // --- VALIDACE A EXTRAKCE DAT ---
 
         private bool ValidateInputs(out DateTime startTime, out DateTime endTime, out Room selectedRoom, out User selectedUser, out string purpose, out int personCount)
@@ -129,16 +155,13 @@ namespace RoomReservationSystem.Desktop.UserControls.Dialogs
             purpose = string.Empty;
             personCount = 0;
 
-            // Required
-            if (!Helper.ValidateRequiredFields(PurposeTB, NumberOfPeopleTB))
-                return false;
+            if (!Helper.ValidateRequiredFields(PurposeTB, NumberOfPeopleTB)) return false;
 
             if (RoomComboBox.SelectedValue == null) { Helper.ShowWarning("Please select a room!"); return false; }
             if (UserComboBox.SelectedValue == null) { Helper.ShowWarning("Please select an organizer!"); return false; }
 
             selectedRoom = RoomComboBox.SelectedItem as Room;
 
-            // 3. Validace logiky počtu lidí (zda je to číslo a nevejde se mimo kapacitu)
             if (!int.TryParse(NumberOfPeopleTB.Text, out personCount) || personCount <= 0 || personCount > selectedRoom.Capacity)
             {
                 Helper.ShowWarning($"Please enter a valid number of people (max {selectedRoom.Capacity})!");
@@ -147,19 +170,16 @@ namespace RoomReservationSystem.Desktop.UserControls.Dialogs
 
             purpose = PurposeTB.Text.Trim();
 
-            // 4. Validace času
             if (!StartTimePicker.Value.HasValue || !EndTimePicker.Value.HasValue) { Helper.ShowWarning("Please select both start and end times!"); return false; }
 
             DateTime rawStartTime = StartTimePicker.Value.Value;
             DateTime rawEndTime = EndTimePicker.Value.Value;
 
-            // Očištění od sekund (tvůj skvělý objev)
             startTime = new DateTime(rawStartTime.Year, rawStartTime.Month, rawStartTime.Day, rawStartTime.Hour, rawStartTime.Minute, 0);
             endTime = new DateTime(rawEndTime.Year, rawEndTime.Month, rawEndTime.Day, rawEndTime.Hour, rawEndTime.Minute, 0);
 
             bool isNewReservation = _currentEditingReservationId == 0;
 
-            // Pojistka s 5 minutami, aby uživatel mohl pohodlně vypsat formulář
             if (isNewReservation && startTime < DateTime.Now.AddMinutes(-5))
             {
                 Helper.ShowWarning("Start date of a new reservation can not be set to the past.");
@@ -174,13 +194,20 @@ namespace RoomReservationSystem.Desktop.UserControls.Dialogs
                 return false;
             }
 
+            // VOLÁNÍ KOLIZE - Zastaví proces a vyhodí upozornění, pokud je čas obsazený
+            if (HasTimeCollision(selectedRoom.Id, startTime, endTime, _currentEditingReservationId))
+            {
+                Helper.ShowWarning("This room is already booked for the selected time slot. Please choose another room or time.");
+                return false;
+            }
+
             selectedUser = UserComboBox.SelectedItem as User;
             return true;
         }
 
         private ReservationDTO? GetReservationFromInputs()
         {
-            if (!ValidateInputs(out DateTime startTime, out DateTime endTime, out Room selectedRoom, out User selectedUser, out string purpose,out int personCount))
+            if (!ValidateInputs(out DateTime startTime, out DateTime endTime, out Room selectedRoom, out User selectedUser, out string purpose, out int personCount))
             {
                 return null;
             }
@@ -190,7 +217,7 @@ namespace RoomReservationSystem.Desktop.UserControls.Dialogs
                 RoomId = selectedRoom.Id,
                 OrganizerId = selectedUser.Id,
                 RoomName = selectedRoom.Name,
-                UserName = selectedUser.Username, 
+                UserName = selectedUser.Username,
                 StartTime = startTime,
                 EndTime = endTime,
                 Purpose = purpose,
@@ -239,7 +266,7 @@ namespace RoomReservationSystem.Desktop.UserControls.Dialogs
             return RoomComboBox.SelectedValue != null ||
                    UserComboBox.SelectedValue != null ||
                    !string.IsNullOrWhiteSpace(PurposeTB.Text) ||
-                   NumberOfPeopleTB.Text != string.Empty;
+                   !string.IsNullOrWhiteSpace(NumberOfPeopleTB.Text);
         }
 
         private bool TrySaveCurrentDraft()
@@ -247,7 +274,7 @@ namespace RoomReservationSystem.Desktop.UserControls.Dialogs
             if (!HasUnsavedChanges()) return true;
 
             ReservationDTO draftRes = GetReservationFromInputs();
-            if (draftRes == null) return false; // Nevalidní formulář
+            if (draftRes == null) return false;
 
             _reservations.Add(draftRes);
             AddReservationToOverview(draftRes, isDraft: true);
@@ -305,7 +332,6 @@ namespace RoomReservationSystem.Desktop.UserControls.Dialogs
             }
             else
             {
-                // Pokud byla chyba, tlačítko zase odemkneme
                 ConfirmReservationBtn.IsEnabled = true;
             }
         }

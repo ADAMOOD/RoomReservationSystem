@@ -58,6 +58,56 @@ namespace RoomReservationSystem.Controllers.Api
 
             return NoContent();
         }
+        [HttpPut("{id}/activate")]
+        public async Task<IActionResult> ActivateReservationAsync(int id)
+        {
+            var reservation = await _reservationRepository.GetReservationByIdAsync(id);
+
+            if (reservation == null)
+                return NotFound("Reservation not found.");
+
+            if (reservation.Status == ReservationStatus.Active)
+                return BadRequest("Reservation is already active.");
+
+            // collision check 
+            bool hasCollision = await _reservationRepository.CheckCollisionAsync(
+                reservation.RoomId,
+                reservation.StartTime,
+                reservation.EndTime,
+                reservation.Id);
+
+            if (hasCollision)
+                return BadRequest("Room is already booked for this time slot.");
+
+            reservation.Status = ReservationStatus.Active;
+
+            await _reservationRepository.UpdateStatusAsync(id, ReservationStatus.Active);
+
+            // 5. Zápis do historie (Repozitář udělá hloupý INSERT do tabulky historie) az nakonec projektu
+            //await _reservationRepository.AddHistoryRecordAsync(id, ReservationStatus.Active, DateTime.Now);
+
+            return Ok();
+        }
+        [HttpPut("{id}/cancel")]
+        public async Task<IActionResult> CancelReservationAsync(int id)
+        {
+            var reservation = await _reservationRepository.GetReservationByIdAsync(id);
+
+            if (reservation == null)
+                return NotFound("Reservation not found.");
+
+            if (reservation.Status == ReservationStatus.Cancelled)
+                return BadRequest("Reservation is already cancelled.");
+            
+            reservation.Status = ReservationStatus.Cancelled;   
+
+            await _reservationRepository.UpdateStatusAsync(id, ReservationStatus.Cancelled);
+
+            // 5. Zápis do historie (Repozitář udělá hloupý INSERT do tabulky historie) az nakonec projektu
+            //await _reservationRepository.AddHistoryRecordAsync(id, ReservationStatus.Active, DateTime.Now);
+
+            return Ok();
+        }
 
     }
 }

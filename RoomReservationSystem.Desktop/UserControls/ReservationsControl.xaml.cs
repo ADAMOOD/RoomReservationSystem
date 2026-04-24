@@ -40,24 +40,62 @@ namespace RoomReservationSystem.Desktop.UserControls
             _reservations = await _apiService.Client.GetFromJsonAsync<List<ReservationDTO>>("Api/Reservations");
             Filter_TextChanged(null, null);
         }
+        private List<ReservationDTO> GetValidFutureReservations(List<ReservationDTO> selectedReservations)
+        {
+            var pastReservations = selectedReservations.Where(r => r.StartTime < DateTime.Now).ToList();
+            var validReservations = selectedReservations.Where(r => r.StartTime >= DateTime.Now).ToList();
 
+            if (pastReservations.Any())
+            {
+                string pastNames = string.Join("\n", pastReservations.Select(r => $"• ID {r.Id}: {r.RoomName} ({r.StartTime:g})"));
+
+                string validNames = string.Join("\n", validReservations.Select(r => $"• ID {r.Id}: {r.RoomName} ({r.StartTime:g})"));
+
+                MessageBoxResult dialogResult = MessageBox.Show(
+                    $"Following reservations have already occurred:\n\n{pastNames}\n\nDo you want to continue the action ONLY with valid future reservations?\n\n{validNames}",
+                    "Found past reservations",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Warning);
+
+                if (dialogResult == MessageBoxResult.Yes)
+                {
+                    return validReservations;
+                }
+                else
+                {
+                    return new List<ReservationDTO>();
+                }
+            }
+            return validReservations;
+        }
         private void ReservationsDG_OnSelectedCellsChanged(object sender, SelectedCellsChangedEventArgs e)
         {
-            if (ReservationsDG.SelectedItems.Count == 0)
+            var selected = ReservationsDG.SelectedItems.Cast<ReservationDTO>().ToList();
+
+            if (selected.Count == 0)
             {
                 deleteBTN.IsEnabled = false;
                 editBTN.IsEnabled = false;
                 editBTN.Content = "Edit";
                 deleteBTN.Content = "Delete";
             }
-            else if (ReservationsDG.SelectedItems.Count == 1)
+            else if (selected.Count == 1)
             {
-                var selected = ReservationsDG.SelectedItems.Cast<ReservationDTO>().FirstOrDefault();
-                deleteBTN.IsEnabled = true;
-                editBTN.IsEnabled = true;
+                var res = selected.First();
+                bool isPast = res.StartTime < DateTime.Now;
+                deleteBTN.IsEnabled = !isPast;
+                editBTN.IsEnabled = !isPast;
 
-                editBTN.Content = $"Edit {selected?.Id} - {selected?.RoomName} - {selected?.UserName}";
-                deleteBTN.Content = $"Delete {selected?.Id} - {selected?.RoomName} - {selected?.UserName}";
+                if (isPast)
+                {
+                    editBTN.Content = "Cannot edit past res.";
+                    deleteBTN.Content = "Cannot delete past res.";
+                }
+                else
+                {
+                    editBTN.Content = $"Edit {res.Id} - {res.RoomName}";
+                    deleteBTN.Content = $"Delete {res.Id} - {res.RoomName}";
+                }
             }
             else
             {
@@ -147,41 +185,44 @@ namespace RoomReservationSystem.Desktop.UserControls
             }
         }
 
-        private void EditButton_Click(object sender, RoutedEventArgs e)
+        private async void EditButton_Click(object sender, RoutedEventArgs e)
         {
             var selected = ReservationsDG.SelectedItems.Cast<ReservationDTO>().ToList();
-            if (selected.Count == 0)
+
+            var validToProcess = GetValidFutureReservations(selected);
+
+            if (!validToProcess.Any()) return;
+            Dialogs.ReservationDialog editResDialog = new Dialogs.ReservationDialog(_apiService, validToProcess);
+
+            bool? result = editResDialog.ShowDialog();
+
+            if (result == true)
             {
-                MessageBox.Show("Please select reservations to Edit", "No selection", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
+                await LoadReservationsAsync();
             }
-            ReservationDialog rd = new ReservationDialog(_apiService, selected);
-            rd.ShowDialog();
-            LoadReservationsAsync();
         }
 
         private async void DeleteButton_Click(object sender, RoutedEventArgs e)
         {
             var selected = ReservationsDG.SelectedItems.Cast<ReservationDTO>().ToList();
+            var validToProcess = GetValidFutureReservations(selected);
 
-            if (selected.Count == 0)
-            {
-                MessageBox.Show("Please select reservations you want to delete", "No selection", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
+            if (!validToProcess.Any()) return;
 
             if (MessageBox.Show("This step is irreversible.", "Delete", MessageBoxButton.OKCancel, MessageBoxImage.Warning) != MessageBoxResult.OK)
                 return;
 
             bool needsReload = false;
-            foreach (var reservation in selected)
+
+            // IMPORTANT - here have to be valid reservations
+            foreach (var reservation in validToProcess)
             {
                 try
                 {
                     var reply = await _apiService.Client.DeleteAsync($"api/Reservations/{reservation.Id}");
                     if (!reply.IsSuccessStatusCode)
                     {
-                        MessageBox.Show($"Reservation {reservation?.Id} - {reservation?.RoomName} - {reservation?.UserName} cannot be deleted.", "Delete Failed", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        Helper.ShowWarning($"Reservation {reservation.Id} cannot be deleted.");
                     }
                     else
                     {
@@ -190,13 +231,13 @@ namespace RoomReservationSystem.Desktop.UserControls
                 }
                 catch (Exception)
                 {
-                    MessageBox.Show($"Network error while trying to delete room: {reservation?.Id} - {reservation?.RoomName} - {reservation?.UserName}.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    Helper.ShowWarning($"Network error while trying to delete reservation: {reservation.Id}.");
                 }
             }
+
             if (needsReload)
             {
                 await LoadReservationsAsync();
-                ReservationsDG_OnSelectedCellsChanged(null, null);
             }
         }
 
@@ -204,6 +245,90 @@ namespace RoomReservationSystem.Desktop.UserControls
         private async void RefreshBtn_OnClick(object sender, RoutedEventArgs e)
         {
             await LoadReservationsAsync();
+
+        }
+
+        private async void activateBTN(object sender, RoutedEventArgs e)
+        {
+            var selected = ReservationsDG.SelectedItems.Cast<ReservationDTO>().ToList();
+
+            var validToProcess = GetValidFutureReservations(selected)
+                .Where(r => r.Status == ReservationStatus.Cancelled)
+                .ToList();
+
+            if (!validToProcess.Any()) return;
+
+            bool needsReload = false;
+
+            foreach (var reservation in validToProcess)
+            {
+                try
+                {
+                    var reply = await _apiService.Client.PutAsync($"Api/Reservations/{reservation.Id}/activate", null);
+
+                    if (!reply.IsSuccessStatusCode)
+                    {
+                        string errorMsg = await reply.Content.ReadAsStringAsync();
+                        Helper.ShowWarning($"Reservation {reservation.Id} cannot be activated.\nReason: {errorMsg}");
+                    }
+                    else
+                    {
+                        needsReload = true;
+                    }
+                }
+                catch (Exception)
+                {
+                    Helper.ShowWarning($"Network error while trying to activate reservation: {reservation.Id}.");
+                }
+            }
+
+            if (needsReload)
+            {
+                await LoadReservationsAsync();
+
+                ReservationsDG_OnSelectedCellsChanged(null, null);
+            }
+        }
+
+        private async void canbcelBTN(object sender, RoutedEventArgs e)
+        {
+            var selected = ReservationsDG.SelectedItems.Cast<ReservationDTO>().ToList();
+
+            var validToProcess = GetValidFutureReservations(selected)
+                .Where(r => r.Status == ReservationStatus.Active)
+                .ToList();
+
+            if (!validToProcess.Any()) return;
+
+            bool needsReload = false;
+
+            foreach (var reservation in validToProcess)
+            {
+                try
+                {
+                    var reply = await _apiService.Client.PutAsync($"Api/Reservations/{reservation.Id}/cancel", null);
+
+                    if (!reply.IsSuccessStatusCode)
+                    {
+                        string errorMsg = await reply.Content.ReadAsStringAsync();
+                        Helper.ShowWarning($"Reservation {reservation.Id} cannot be canceled.\nReason: {errorMsg}");
+                    }
+                    else
+                    {
+                        needsReload = true;
+                    }
+                }
+                catch (Exception)
+                {
+                    Helper.ShowWarning($"Network error while trying to cancel reservation: {reservation.Id}.");
+                }
+            }
+
+            if (needsReload)
+            {
+                await LoadReservationsAsync();
+                ReservationsDG_OnSelectedCellsChanged(null, null);
+            }
         }
     }
 }
