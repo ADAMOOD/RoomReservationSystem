@@ -7,6 +7,75 @@
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
     <Grid>
-            <DataGrid x:Name="UsersDG" AutoGenerateColumns="True"></DataGrid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="Users" FontSize="22" FontWeight="SemiBold" Margin="10,10,10,0" Foreground="#333333"/>
+
+        <Border Grid.Row="1" Background="#F9FAFB" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="5" Margin="10,10,10,15" Padding="10">
+            <WrapPanel Orientation="Horizontal" VerticalAlignment="Center">
+
+                <StackPanel Margin="0,0,20,0">
+                    <TextBlock Text="Search (ID/Username)" FontSize="12" Foreground="#6B7280" Margin="0,0,0,5" />
+                    <TextBox x:Name="SearchTB" Width="250" Padding="6" BorderBrush="#D1D5DB" BorderThickness="1" TextChanged="SearchTB_TextChanged"/>
+                </StackPanel>
+
+                <Button x:Name="refreshBtn" Click="RefreshBtn_OnClick" Margin="0,15,0,0" Width="36" Height="36" Cursor="Hand" ToolTip="Refresh">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="btnBorder" Background="Transparent" CornerRadius="18" BorderBrush="#E5E7EB" BorderThickness="1">
+                                <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="20">⟲</TextBlock>
+                            </Border>
+
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="btnBorder" Property="Background" Value="#F3F4F6"/>
+                                    <Setter TargetName="btnBorder" Property="BorderBrush" Value="#D1D5DB"/>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="True">
+                                    <Setter TargetName="btnBorder" Property="Background" Value="#E5E7EB"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Button.Template>
+                </Button>
+
+            </WrapPanel>
+        </Border>
+
+        <DataGrid x:Name="UsersDG"
+                  Grid.Row="2" 
+                  AutoGenerateColumns="True" 
+                  Margin="10,0,10,15"
+                  IsReadOnly="True" 
+                  CanUserAddRows="False" 
+                  CanUserDeleteRows="False" 
+                  SelectionMode="Extended" 
+                  SelectionUnit="FullRow" 
+                  HeadersVisibility="Column" 
+                  AlternatingRowBackground="#FFF7F9FA" 
+                  RowBackground="White"
+                  BorderBrush="#DDDDDD" 
+                  BorderThickness="1"
+                  HorizontalGridLinesBrush="#EEEEEE"
+                  VerticalGridLinesBrush="Transparent"
+                  SelectedCellsChanged="UserDG_OnSelectedCellsChanged"
+                  ColumnWidth="*">
+        </DataGrid>
+
+        <Grid Grid.Row="3" Margin="10,0,10,10">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+                <Button Content="Create new user" Click="AddButton_Click" Padding="15,8" MinWidth="130" Background="#0078D7" Foreground="White" BorderThickness="0" Cursor="Hand" />
+            </StackPanel>
+
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button x:Name="editBTN" IsEnabled="False" Content="Edit" Click="EditButton_Click" Padding="15,8" MinWidth="130" Margin="0,0,10,0" Cursor="Hand" />
+                <Button x:Name="deleteBTN" Content="Delete" IsEnabled="False" Click="DeleteButton_Click" Padding="15,8" MinWidth="130" Background="#D13438" Foreground="White" BorderThickness="0" Cursor="Hand" />
+            </StackPanel>
+        </Grid>
     </Grid>
 </UserControl>

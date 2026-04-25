@@ -12,5 +12,7 @@ namespace RoomReservatingSystem.Shared
         public string PasswordHash { get; set; } = string.Empty;
 
         public bool IsAdmin { get; set; } = false;
+
+        public bool IsDeleted { get; set; } = false;
     }
 }

@@ -40,11 +40,11 @@
                     <TextBox x:Name="FilterPurposeTB" Width="200" Padding="6" BorderBrush="#D1D5DB" BorderThickness="1" TextChanged="Filter_TextChanged"/>
                 </StackPanel>
 
-                <Button x:Name="refreshBtn" Click="RefreshBtn_OnClick" Margin="10" Width="36" Height="36" Cursor="Hand" ToolTip="Obnovit data">
+                <Button x:Name="refreshBtn" Click="RefreshBtn_OnClick" Margin="10" Width="36" Height="36" Cursor="Hand" ToolTip="Refresh">
                     <Button.Template>
                         <ControlTemplate TargetType="Button">
                             <Border x:Name="btnBorder" Background="Transparent" CornerRadius="18" BorderBrush="#E5E7EB" BorderThickness="1">
-                                <Image Source="/UserControls/refreshIcon.png" Height="18" Width="18" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="20">⟲</TextBlock>
                             </Border>
 
                             <ControlTemplate.Triggers>
@@ -59,9 +59,10 @@
                         </ControlTemplate>
                     </Button.Template>
                 </Button>
+
                 <StackPanel Orientation="Vertical" Margin="10,0,10,0">
-                    <Button Content="Activate" Click="activateBTN" Margin="0,0,0,10"/>
-                    <Button Content="Cancel" Click="canbcelBTN" />
+                    <Button Content="Activate" Cursor="Hand" Background="Green" BorderThickness="0" Padding="5" Foreground="AliceBlue" Click="activateBTN" Margin="0,0,0,10"/>
+                    <Button Content="Cancel" Cursor="Hand" Background="DarkRed" Foreground="AliceBlue" BorderThickness ="0"  Padding="5" Click="canbcelBTN" />
                 </StackPanel>
             </WrapPanel>
 
