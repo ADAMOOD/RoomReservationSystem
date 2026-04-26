@@ -19,9 +19,10 @@ namespace RoomReservationSystem.Controllers.Web
             _roomRepository = roomRepository;
             _reservationRepository = reservationRepository;
         }
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(int? minCapacity)
         {
-            var rooms = await _roomRepository.GetAllRoomsAsync();
+            ViewBag.CurrentMinCapacity = minCapacity;
+            var rooms = await _roomRepository.GetAllRoomsAsync(minCapacity);
             return View(rooms);
         }
 
@@ -84,7 +85,6 @@ namespace RoomReservationSystem.Controllers.Web
                 Purpose = model.Purpose,
                 Status = ReservationStatus.Active
             };
-            await _reservationRepository.CreateReservationAsync(newReservation);
 
             //record history of reservation creation (if reservation creation was successful)
             int? newId = await _reservationRepository.CreateReservationAsync(newReservation);
@@ -94,6 +94,13 @@ namespace RoomReservationSystem.Controllers.Web
             }
             TempData["SuccessMessage"] = $"Reservation {model.RoomName} has been successfuly made!";
             return RedirectToAction("Index");
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetStatistics(DateTime? from, DateTime? to)
+        {
+            var stats = await _reservationRepository.GetGlobalRoomStatisticsAsync(from, to);
+            return Json(stats);
         }
 
     }

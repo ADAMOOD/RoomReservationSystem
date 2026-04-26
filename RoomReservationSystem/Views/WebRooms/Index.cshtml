@@ -25,79 +25,115 @@
 	</div>
 }
 
-<div class="accordion shadow-sm" id="roomsAccordion">
 
-	@foreach (var room in Model)
-	{
-		<div class="accordion-item">
-			<h2 class="accordion-header" id="heading-@room.Id">
-				<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-@room.Id">
-					<strong>@room.Name</strong> &nbsp; <span class="text-muted">(Capacity: @room.Capacity people | Equipment: @room.Equipment | Max: @room.MaxReservationMinutes minutes)</span>
-				</button> 
-			</h2>
-
-			<div id="collapse-@room.Id" class="accordion-collapse collapse" data-bs-parent="#roomsAccordion">
-				<div class="accordion-body">
-					<div class="row">
-
-						<div class="col-lg-8">
-							<div id="calendar-@room.Id"></div>
-						</div>
-
-						<div class="col-lg-4 mt-4 mt-lg-0 border-start ps-lg-4">
-							<h4 class="mb-3">Make a reservation</h4>
-
-							<form asp-action="Book" method="post" onsubmit="this.querySelector('button[type=submit]').disabled = true;">
-								<input type="hidden" name="RoomId" value="@room.Id" />
-								<input type="hidden" name="RoomName" value="@room.Name" />
-								<input type="hidden" name="RoomCapacity" value="@room.Capacity" />
-								<input type="hidden" name="MaxReservationMinutes" value="@room.MaxReservationMinutes" />
-
-								<div class="mb-3">
-									<label class="form-label text-muted small mb-1">Reservation start</label>
-									<input type="datetime-local" class="form-control" name="StartTime" required />
-								</div>
-								<div class="mb-3">
-									<label class="form-label text-muted small mb-1">Reservation end</label>
-									<input type="datetime-local" class="form-control" name="EndTime" required />
-								</div>
-								<div class="mb-3">
-									<label class="form-label text-muted small mb-1">Purpose</label>
-									<input type="text" class="form-control" name="Purpose" placeholder="e.g. Breefing..." required />
-								</div>
-								<div class="mb-3">
-									<label class="form-label text-muted small mb-1">Number of people</label>
-									<input type="number" class="form-control" name="PersonCount" min="1" max="@room.Capacity" value="1" required />
-								</div>
-
-								<div class="d-grid mt-4">
-									<button type="submit" class="btn btn-success">Book</button>
-								</div>
-							</form>
-						</div>
-
-					</div>
+<div class="card shadow-sm mb-4">
+	<div class="card-body">
+		<form method="get" asp-action="Index" class="row g-3 align-items-end">
+			<div class="col-md-4">
+				<label for="minCapacity" class="form-label fw-bold">Minimum Room Capacity</label>
+				<div class="input-group">
+					<span class="input-group-text"><i class="bi bi-people-fill">👥</i></span>
+					<input type="number" id="minCapacity" name="minCapacity" class="form-control" value="@ViewBag.CurrentMinCapacity" min="1" placeholder="e.g. 15">
 				</div>
 			</div>
-		</div>
-	}
+			<div class="col-md-4">
+				<button type="submit" class="btn btn-primary px-4">Filter Rooms</button>
+				<a asp-action="Index" class="btn btn-outline-secondary ms-2">Clear</a>
+			</div>
+		</form>
+	</div>
+</div>
+
+<div class="accordion shadow-sm" id="roomsAccordion">
+
+    @foreach (var room in Model)
+    {
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="heading-@room.Id">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-@room.Id">
+                    <strong>@room.Name</strong> &nbsp; <span class="text-muted">(Capacity: @room.Capacity people | Equipment: @room.Equipment | Max: @room.MaxReservationMinutes minutes)</span>
+                </button> 
+            </h2>
+
+            <div id="collapse-@room.Id" class="accordion-collapse collapse" data-bs-parent="#roomsAccordion">
+                <div class="accordion-body">
+                    <div class="row">
+
+                        <div class="col-lg-8">
+                            <div id="calendar-@room.Id"></div>
+                        </div>
+
+                        <div class="col-lg-4 mt-4 mt-lg-0 border-start ps-lg-4">
+                            <h4 class="mb-3">Make a reservation</h4>
+
+                            <form asp-action="Book" method="post" onsubmit="this.querySelector('button[type=submit]').disabled = true;">
+                                <input type="hidden" name="RoomId" value="@room.Id" />
+                                <input type="hidden" name="RoomName" value="@room.Name" />
+                                <input type="hidden" name="RoomCapacity" value="@room.Capacity" />
+                                <input type="hidden" name="MaxReservationMinutes" value="@room.MaxReservationMinutes" />
+
+                                <div class="mb-3">
+                                    <label class="form-label text-muted small mb-1">Reservation start</label>
+                                    <input type="datetime-local" class="form-control" name="StartTime" required />
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label text-muted small mb-1">Reservation end</label>
+                                    <input type="datetime-local" class="form-control" name="EndTime" required />
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label text-muted small mb-1">Purpose</label>
+                                    <input type="text" class="form-control" name="Purpose" placeholder="e.g. Breefing..." required />
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label text-muted small mb-1">Number of people</label>
+                                    <input type="number" class="form-control" name="PersonCount" min="1" max="@room.Capacity" value="1" required />
+                                </div>
+
+                                <div class="d-grid mt-4">
+                                    <button type="submit" class="btn btn-success">Book</button>
+                                </div>
+                            </form>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Room Utilization Statistics</h5>
+        <form id="statsForm" class="d-flex gap-2">
+            <input type="date" id="statsFrom" class="form-control form-control-sm" title="From">
+            <input type="date" id="statsTo" class="form-control form-control-sm" title="To">
+            <button type="submit" class="btn btn-sm btn-primary">Refresh</button>
+        </form>
+    </div>
+    <div class="card-body">
+        <canvas id="statsChart" height="80"></canvas>
+    </div>
 </div>
 
 <script>
 	document.addEventListener('DOMContentLoaded', function() {
 
+		// --- 1. FULLCALENDAR LOGIKA ---
 		// Najdeme všechny rozbalovací panely na stránce
 		var collapseElements = document.querySelectorAll('.accordion-collapse');
 
 		collapseElements.forEach(function(collapseEl) {
-			// Tohle je ten trik! Zavoláme kalendář AŽ KDYŽ animace rozbalení úplně skončí
+			// Zavoláme kalendář AŽ KDYŽ animace rozbalení úplně skončí
 			collapseEl.addEventListener('shown.bs.collapse', function () {
 
 				// Vytáhneme si ID místnosti z ID panelu (např. z "collapse-5" získáme "5")
 				var roomId = collapseEl.id.split('-')[1];
 				var calendarEl = document.getElementById('calendar-' + roomId);
 
-				// Kontrola: Vykreslíme kalendář, pouze pokud v tom divu ještě žádný není (aby se nenačítal při každém otevření/zavření znovu)
+				// Kontrola: Vykreslíme kalendář, pouze pokud v tom divu ještě žádný není
 				if (calendarEl.innerHTML === "") {
 					var calendar = new FullCalendar.Calendar(calendarEl, {
 						initialView: 'timeGridWeek',
@@ -108,20 +144,18 @@
 							right: 'timeGridWeek,timeGridDay'
 						},
 						// Napojení na tvé API
-							events: '/WebRooms/GetRoomEvents?roomId=' + roomId, // Tohle už tam máš
+						events: '/WebRooms/GetRoomEvents?roomId=' + roomId,
 
-						// --- NOVÉ VLASTNOSTI ---
+						// --- VLASTNOSTI ---
 						selectable: true,      // Povolí uživateli táhnout myší a vybrat čas
-						selectOverlap: false,  // Geniální věc: zakáže výběr přes už existující červené bloky!
+						selectOverlap: false,  // Zakáže výběr přes už existující bloky!
 
 						// Tato funkce se spustí, jakmile uživatel myš pustí
 						select: function(info) {
-							// 1. Najdeme formulář vedle kalendáře
+							// Najdeme formulář vedle kalendáře
 							var form = collapseEl.querySelector('form');
 
-							// 2. FullCalendar nám vrátí čas ve formátu ISO (např. "2026-04-06T12:00:00+02:00")
-							// HTML input type="datetime-local" ale potřebuje jen prvních 16 znaků ("2026-04-06T12:00")
-							// Proto text jednoduše ořízneme a vložíme přímo do tvých políček:
+							// Ořízneme čas na 16 znaků ("2026-04-06T12:00") a vložíme do inputů
 							form.querySelector('[name="StartTime"]').value = info.startStr.substring(0, 16);
 							form.querySelector('[name="EndTime"]').value = info.endStr.substring(0, 16);
 						}
@@ -131,5 +165,133 @@
 				}
 			});
 		});
+
+
+		// --- 2. CHART.JS STATISTIKY ---
+		let statsChart = null;
+
+		function loadStatistics() {
+			const fromDate = document.getElementById('statsFrom').value;
+			const toDate = document.getElementById('statsTo').value;
+
+			let url = '/WebRooms/GetStatistics?';
+			if (fromDate) url += '&from=' + fromDate;
+			if (toDate) url += '&to=' + toDate;
+
+			fetch(url)
+				.then(response => response.json())
+				.then(data => {
+					const roomNames = data.map(d => d.roomName);
+					const reservations = data.map(d => d.totalReservations);
+					const minutes = data.map(d => d.totalMinutesReserved);
+
+					// Pokud už graf existuje, zničíme ho, abychom vykreslili nový s novými daty
+					if (statsChart) {
+						statsChart.destroy();
+					}
+
+					const ctx = document.getElementById('statsChart').getContext('2d');
+					statsChart = new Chart(ctx, {
+						type: 'bar',
+						data: {
+							labels: roomNames,
+							datasets: [
+								{
+									label: 'Number of Reservations',
+									data: reservations,
+									backgroundColor: 'rgba(43, 110, 253, 0.8)', // Moderní sytá modrá
+									borderColor: 'rgba(43, 110, 253, 1)',
+									borderWidth: 1,
+									borderRadius: 6, // Zakulacené horní rohy sloupců pro moderní vzhled
+									yAxisID: 'y'
+								},
+								{
+									label: 'Total Time (Minutes)',
+									data: minutes,
+									backgroundColor: 'rgba(239, 68, 68, 0.15)', // Velmi jemná červená výplň
+									borderColor: 'rgba(239, 68, 68, 1)',
+									borderWidth: 3, // Silnější a výraznější čára
+									tension: 0.4, // Udělá z čáry hezkou plynulou křivku místo ostrých zlomů
+									fill: true, // Vyplní prostor pod křivkou barvou pozadí
+									pointBackgroundColor: '#ffffff', // Bílý střed bodů
+									pointBorderColor: 'rgba(239, 68, 68, 1)', // Červený okraj bodů
+									pointBorderWidth: 2,
+									pointRadius: 4,
+									pointHoverRadius: 6,
+									type: 'line', // Mix grafů - tohle bude čára!
+									yAxisID: 'y1'
+								}
+							]
+						},
+						options: {
+							responsive: true,
+							interaction: {
+								mode: 'index', // Když najedeš myší na sloupec, tooltip ukáže hodnoty obou grafů najednou
+								intersect: false,
+							},
+							plugins: {
+								legend: {
+									position: 'top',
+									labels: { font: { size: 13, family: "'Segoe UI', sans-serif" } }
+								},
+								tooltip: {
+									backgroundColor: 'rgba(17, 24, 39, 0.9)', // Tmavý elegantní tooltip
+									titleFont: { size: 14 },
+									bodyFont: { size: 13 },
+									padding: 12,
+									cornerRadius: 8,
+									callbacks: {
+										// Přepočet minut na hodiny přímo uvnitř tooltipu pro lepší čitelnost!
+										label: function(context) {
+											let label = context.dataset.label || '';
+											if (label) label += ': ';
+
+											if (context.dataset.yAxisID === 'y1') {
+												let mins = context.parsed.y;
+												let hours = (mins / 60).toFixed(1);
+												label += mins + ' mins (' + hours + ' hours)';
+											} else {
+												label += context.parsed.y;
+											}
+											return label;
+										}
+									}
+								}
+							},
+							scales: {
+								x: {
+									grid: { display: false } // Schová svislou mřížku pro čistší vzhled
+								},
+								y: {
+									type: 'linear',
+									display: true,
+									position: 'left',
+									beginAtZero: true, // Extrémně důležité: zabrání tomu, aby graf levitoval ve vzduchu
+									title: { display: true, text: 'Reservations (Count)', font: { weight: 'bold' } },
+									ticks: { precision: 0 } // Počet rezervací nemůže být desetinné číslo
+								},
+								y1: {
+									type: 'linear',
+									display: true,
+									position: 'right',
+									beginAtZero: true, // Extrémně důležité
+									title: { display: true, text: 'Time (Minutes)', font: { weight: 'bold' } },
+									grid: { drawOnChartArea: false } // Schová horizontální mřížku druhé osy, aby se nekřížila s první
+								}
+							}
+						}
+					});
+				});
+		}
+
+		// Načíst graf hned po načtení stránky
+		loadStatistics();
+
+		// Přepočítat graf po kliknutí na "Refresh"
+		document.getElementById('statsForm').addEventListener('submit', function(e) {
+			e.preventDefault();
+			loadStatistics();
+		});
+
 	});
 </script>

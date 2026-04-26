@@ -14,10 +14,15 @@ namespace RoomReservationSystem.Repositories
             _connectionString = configuration.GetConnectionString("DefaultConnection");
         }
 
-        public async Task<IEnumerable<Room>> GetAllRoomsAsync()
+        public async Task<IEnumerable<Room>> GetAllRoomsAsync(int? minCapacity = null)
         {
             using (IDbConnection db = new SqlConnection(_connectionString))
             {
+                if (minCapacity.HasValue && minCapacity.Value > 0)
+                {
+                    string sql = "SELECT * FROM Room WHERE Capacity >= @MinCapacity";
+                    return await db.QueryAsync<Room>(sql, new { MinCapacity = minCapacity.Value });
+                }
                 return await db.GetListAsync<Room>();
             }
         }

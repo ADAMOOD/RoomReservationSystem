@@ -25,21 +25,33 @@ namespace RoomReservationSystem.Controllers.Web
                 currentUserId = int.Parse(User.FindFirstValue("UserId"));
             }
 
-            int? filterId = null;
-            if (onlyMine)
-            {
-                filterId = currentUserId;
-            }
-            var reservations = await _reservationRepository.GetFilteredReservationsAsync(roomId, purpose, hideCancelled, filterId);
+            // PŘEDÁVÁME currentUserId a onlyMine JAKO SAMOSTATNÉ PARAMETRY
+            var reservations = await _reservationRepository.GetFilteredReservationsAsync(roomId, purpose, hideCancelled, onlyMine, currentUserId);
 
-            var calendarEvents = reservations.Select(r => new
+            var calendarEvents = reservations.Select(r =>
             {
-                id = r.Id,
-                title = $"{r.RoomName} ({((currentUserId == null || r.OrganizerId != currentUserId) ? "Occupied" : r.Purpose)})",
+                string eventColor;
+                if (r.Status == ReservationStatus.Cancelled)
+                {
+                    eventColor = "#6c757d";
+                }
+                else if (currentUserId.HasValue && r.OrganizerId == currentUserId.Value)
+                {
+                    eventColor = "#0d6efd"; // Modrá pro moje rezervace
+                }
+                else
+                {
+                    eventColor = "#dc3545"; // Červená pro cizí
+                }
 
-                start = r.StartTime.ToString("yyyy-MM-ddTHH:mm:ss"),
-                end = r.EndTime.ToString("yyyy-MM-ddTHH:mm:ss"),
-                color = r.Status == ReservationStatus.Cancelled ? "#6c757d" : "#198754"
+                return new
+                {
+                    id = r.Id,
+                    title = $"{r.RoomName} ({((currentUserId == null || r.OrganizerId != currentUserId) ? "Occupied" : r.Purpose)})",
+                    start = r.StartTime.ToString("yyyy-MM-ddTHH:mm:ss"),
+                    end = r.EndTime.ToString("yyyy-MM-ddTHH:mm:ss"),
+                    color = eventColor
+                };
             });
 
             return Ok(calendarEvents);

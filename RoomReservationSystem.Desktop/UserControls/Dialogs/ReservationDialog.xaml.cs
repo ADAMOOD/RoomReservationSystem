@@ -179,9 +179,7 @@ namespace RoomReservationSystem.Desktop.UserControls.Dialogs
             startTime = new DateTime(rawStartTime.Year, rawStartTime.Month, rawStartTime.Day, rawStartTime.Hour, rawStartTime.Minute, 0);
             endTime = new DateTime(rawEndTime.Year, rawEndTime.Month, rawEndTime.Day, rawEndTime.Hour, rawEndTime.Minute, 0);
 
-            bool isNewReservation = _currentEditingReservationId == 0;
-
-            if (isNewReservation && startTime < DateTime.Now.AddMinutes(-5))
+            if (startTime < DateTime.Now.AddMinutes(-5))
             {
                 Helper.ShowWarning("Start date of a new reservation can not be set to the past.");
                 return false;

@@ -31,7 +31,6 @@ namespace RoomReservationSystem.Repositories
                 return await db.QueryFirstOrDefaultAsync<User>(sql, new { Id = id });
             }
         }
-
         public async Task<bool> SoftDeleteUserAsync(int userId)
         {
             using (IDbConnection db = new SqlConnection(_connection))
@@ -44,15 +43,32 @@ namespace RoomReservationSystem.Repositories
                         string deleteUserSql = "UPDATE [User] SET IsDeleted = 1 WHERE Id = @Id";
                         await db.ExecuteAsync(deleteUserSql, new { Id = userId }, transaction);
 
-                        // 2. Cancel future active reservations for this user
-                        // We use the integer value '1' for Active status based on the typical Enum mapping, 
-                        // and '2' for Cancelled. You may need to adjust these values if your enum mapping differs.
+                        ///first we insert records about future reservations of this user to the history,
+                        /// then we cancel these reservations (we need to do it in this order, because after cancellation the reservation
+                        /// will not be visible for the user and we won't be able to get the data for history)
+                        string insertHistorySql = @"
+                    INSERT INTO ReservationHistory (ReservationId, OldStatus, NewStatus, ChangedAt, ChangedByUserId)
+                    SELECT Id, @ActiveStatus, @CancelledStatus, GETDATE(), @UserId 
+                    FROM Reservation 
+                    WHERE OrganizerId = @UserId 
+                      AND Status = @ActiveStatus 
+                      AND StartTime > GETDATE()";
+
+                        await db.ExecuteAsync(insertHistorySql, new
+                        {
+                            UserId = userId,
+                            CancelledStatus = ReservationStatus.Cancelled,
+                            ActiveStatus = ReservationStatus.Active
+                        }, transaction);
+
+                        // after we have recorded the history of future reservations, we can cancel them,
+                        // so they won't be visible for the user in the profile and won't cause any confusion
                         string cancelReservationsSql = @"
-                            UPDATE Reservation 
-                            SET Status = @CancelledStatus 
-                            WHERE OrganizerId = @UserId 
-                              AND Status = @ActiveStatus 
-                              AND StartTime > GETDATE()";
+                    UPDATE Reservation 
+                    SET Status = @CancelledStatus 
+                    WHERE OrganizerId = @UserId 
+                      AND Status = @ActiveStatus 
+                      AND StartTime > GETDATE()";
 
                         await db.ExecuteAsync(cancelReservationsSql, new
                         {
@@ -66,7 +82,6 @@ namespace RoomReservationSystem.Repositories
                     }
                     catch
                     {
-
                         transaction.Rollback();
                         return false;
                     }

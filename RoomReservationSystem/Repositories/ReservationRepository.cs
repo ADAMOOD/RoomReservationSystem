@@ -101,8 +101,8 @@ namespace RoomReservationSystem.Repositories
             using (IDbConnection db = new SqlConnection(_connectionString))
             {
                 string sql = @"
-            INSERT INTO ReservationHistory (ReservationId, OldStatus, NewStatus, ChangedByUserId)
-            VALUES (@ReservationId, @OldStatus, @NewStatus, @ChangedByUserId)";
+    INSERT INTO ReservationHistory (ReservationId, OldStatus, NewStatus, ChangedAt, ChangedByUserId)
+    VALUES (@ReservationId, @OldStatus, @NewStatus, @ChangedAt, @ChangedByUserId)";
 
                 await db.ExecuteAsync(sql, new
                 {
@@ -115,7 +115,31 @@ namespace RoomReservationSystem.Repositories
             }
         }
 
-        
+        public async Task<IEnumerable<RoomStatisticsDTO>> GetGlobalRoomStatisticsAsync(DateTime? from, DateTime? to)
+        {
+            using (IDbConnection db = new SqlConnection(_connectionString))
+            {
+                string sql = @"
+            SELECT 
+                rm.Name AS RoomName,
+                COUNT(r.Id) AS TotalReservations,
+                COALESCE(SUM(DATEDIFF(MINUTE, r.StartTime, r.EndTime)), 0) AS TotalMinutesReserved
+            FROM Room rm
+            LEFT JOIN Reservation r ON rm.Id = r.RoomId 
+                AND r.Status = @ActiveStatus
+                AND (@From IS NULL OR r.StartTime >= @From)
+                AND (@To IS NULL OR r.EndTime <= @To)
+            GROUP BY rm.Name";
+
+                return await db.QueryAsync<RoomStatisticsDTO>(sql, new
+                {
+                    ActiveStatus = ReservationStatus.Active,
+                    From = from,
+                    To = to
+                });
+            }
+        }
+
         public async Task<bool> DeleteReservationAsync(int id)
         {
             using (IDbConnection db = new SqlConnection(_connectionString))
@@ -144,14 +168,13 @@ namespace RoomReservationSystem.Repositories
                 }
             }
         }
-        public async Task<IEnumerable<UserProfileReservationViewModel>> GetFilteredReservationsAsync(int roomId, string? purpose, bool hideCancelled, int? loggedUserId)
+        public async Task<IEnumerable<UserProfileReservationViewModel>> GetFilteredReservationsAsync(int roomId, string? purpose, bool hideCancelled, bool onlyMine, int? loggedUserId)
         {
             using (IDbConnection db = new SqlConnection(_connectionString))
             {
-
                 string sql = @"
             SELECT 
-                r.Id,r.OrganizerId, r.RoomId, r.StartTime, r.EndTime, r.Purpose, r.PersonCount, r.Status,
+                r.Id, r.OrganizerId, r.RoomId, r.StartTime, r.EndTime, r.Purpose, r.PersonCount, r.Status,
                 rm.Name AS RoomName
             FROM Reservation r
             INNER JOIN Room rm ON r.RoomId = rm.Id
@@ -159,19 +182,10 @@ namespace RoomReservationSystem.Repositories
 
                 var parameters = new DynamicParameters();
 
-
-                // room is selected (greater than 0)
                 if (roomId > 0)
                 {
                     sql += " AND r.RoomId = @RoomId ";
                     parameters.Add("@RoomId", roomId);
-                }
-
-                // purpose is not empty
-                if (!string.IsNullOrWhiteSpace(purpose))
-                {
-                    sql += " AND r.Purpose LIKE @Purpose ";
-                    parameters.Add("@Purpose", "%" + purpose + "%");
                 }
 
                 if (hideCancelled)
@@ -180,11 +194,39 @@ namespace RoomReservationSystem.Repositories
                     parameters.Add("@ActiveStatus", ReservationStatus.Active);
                 }
 
-                if (loggedUserId.HasValue)
+                bool userParamAdded = false;
+
+                // Pokud chce vidět JEN SVOJE
+                if (onlyMine && loggedUserId.HasValue)
                 {
-                    sql += " AND r.OrganizerId = @OrganizerId ";
-                    parameters.Add("@OrganizerId", loggedUserId.Value);
+                    sql += " AND r.OrganizerId = @LoggedUserId ";
+                    parameters.Add("@LoggedUserId", loggedUserId.Value);
+                    userParamAdded = true;
                 }
+
+                // --- BEZPEČNOSTNÍ FILTR ÚČELU ---
+                if (!string.IsNullOrWhiteSpace(purpose))
+                {
+                    if (loggedUserId.HasValue)
+                    {
+                        // Uživatel hledá text.
+                        // Jeho vlastní rezervace musí text obsahovat.
+                        // Cizí rezervace se zobrazí VŽDY (pokud nezvolil onlyMine), aby nedošlo k uniku informací.
+                        sql += " AND ((r.OrganizerId = @LoggedUserId AND r.Purpose LIKE @Purpose) OR r.OrganizerId != @LoggedUserId) ";
+
+                        if (!userParamAdded)
+                        {
+                            parameters.Add("@LoggedUserId", loggedUserId.Value);
+                        }
+                        parameters.Add("@Purpose", "%" + purpose + "%");
+                    }
+                    else
+                    {
+                        // Nepřihlášený uživatel se snaží filtrovat podle účelu.
+                        // Z bezpečnostních důvodů tento filtr pro nepřihlášené úplně ignorujeme.
+                    }
+                }
+
                 return await db.QueryAsync<UserProfileReservationViewModel>(sql, parameters);
             }
         }

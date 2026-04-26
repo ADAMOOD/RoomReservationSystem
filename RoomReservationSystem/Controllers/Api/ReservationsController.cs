@@ -13,9 +13,12 @@ namespace RoomReservationSystem.Controllers.Api
     {
         private readonly ReservationRepository _reservationRepository;
 
-        public ReservationsController(ReservationRepository reservationRepository)
+        private readonly RoomRepository _roomRepository; 
+
+        public ReservationsController(ReservationRepository reservationRepository, RoomRepository roomRepository)
         {
             _reservationRepository = reservationRepository;
+            _roomRepository = roomRepository;
         }
         [Authorize(Policy = "AdminOnly")]
         [HttpGet]
@@ -76,18 +79,37 @@ namespace RoomReservationSystem.Controllers.Api
             if (reservation == null) return NotFound("Reservation not found.");
             if (reservation.Status == ReservationStatus.Active) return BadRequest("Reservation is already active.");
 
-            bool hasCollision = await _reservationRepository.CheckCollisionAsync(reservation.RoomId, reservation.StartTime, reservation.EndTime, reservation.Id);
+            // again we need to get the room to check the capacity and max reservation time,
+            // because these rules also apply when activating a reservation (not only when creating or updating it)
+            var room = await _roomRepository.GetRoomByIdAsync(reservation.RoomId);
+            if (room != null)
+            {
+                if (reservation.PersonCount > room.Capacity)
+                    return BadRequest($"Cannot activate: Room capacity is only {room.Capacity} people.");
+
+                var duration = (reservation.EndTime - reservation.StartTime).TotalMinutes;
+                if (duration > room.MaxReservationMinutes)
+                    return BadRequest($"Cannot activate: Max reservation time for this room is {room.MaxReservationMinutes} minutes.");
+            }
+            // collision check
+            bool hasCollision = await _reservationRepository.CheckCollisionAsync(
+                reservation.RoomId,
+                reservation.StartTime,
+                reservation.EndTime,
+                reservation.Id);
+
             if (hasCollision) return BadRequest("Room is already booked for this time slot.");
 
             // change status in DB
             await _reservationRepository.UpdateStatusAsync(id, ReservationStatus.Active);
 
-            // record history
+            // Zápis do historie
             int loggedUserId = int.Parse(User.FindFirstValue("UserId"));
             await _reservationRepository.AddHistoryRecordAsync(id, ReservationStatus.Cancelled, ReservationStatus.Active, loggedUserId);
 
             return Ok();
         }
+
         [HttpPut("{id}/cancel")]
         public async Task<IActionResult> CancelReservationAsync(int id)
         {
