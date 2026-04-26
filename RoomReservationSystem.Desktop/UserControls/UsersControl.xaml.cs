@@ -146,14 +146,18 @@ namespace RoomReservationSystem.Desktop.UserControls
         private void EditButton_Click(object sender, RoutedEventArgs e)
         {
             var selected = UsersDG.SelectedItems.Cast<User>().ToList();
-            if (!selected.Any())
+
+            // Zabráníme editaci adminů i smazaných uživatelů
+            var validToEdit = selected.Where(u => !u.IsAdmin && !u.IsDeleted).ToList();
+
+            if (!validToEdit.Any())
             {
-                Helper.ShowWarning("No user selected for editing.");
+                Helper.ShowWarning("No valid user selected for editing (Admins and deleted users cannot be edited).");
                 return;
             }
 
             bool refresh = false;
-            foreach (var user in selected)
+            foreach (var user in validToEdit)
             {
                 UserDialog dialog = new UserDialog(_apiService, user);
                 dialog.ShowDialog();
@@ -162,9 +166,10 @@ namespace RoomReservationSystem.Desktop.UserControls
                     refresh = true;
                 }
             }
+
             if (refresh)
             {
-                _ = LoadUsers();
+                LoadUsers();
             }
         }
 

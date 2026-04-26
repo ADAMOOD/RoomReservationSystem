@@ -84,8 +84,7 @@ namespace RoomReservationSystem.Desktop.UserControls
             var selected = RoomsDG.SelectedItems;
             if (selected.Count == 0)
             {
-                MessageBox.Show("Please select at least one record to edit.", "No Selection", MessageBoxButton.OK,
-                    MessageBoxImage.Warning);
+                Helper.ShowWarning("Please select at least one record to delete.");
                 return;
             }
             var editedRooms = selected.Cast<Room>().ToList();

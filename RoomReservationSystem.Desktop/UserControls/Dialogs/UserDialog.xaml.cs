@@ -108,15 +108,20 @@ namespace RoomReservationSystem.Desktop.UserControls.Dialogs
 
             ConfirmBtn.IsEnabled = false;
 
-            bool success = await SaveUserToApiAsync(userToSave);
+            // POUŽITÍ ENUMU Z HELPERU
+            Helper.SaveResult result = await SaveUserToApiAsync(userToSave);
 
-            if (success)
+            if (result == Helper.SaveResult.Success)
             {
                 string message = _isEditMode ? "User successfully updated!" : "User successfully created!";
                 MessageBox.Show(message, "Success", MessageBoxButton.OK, MessageBoxImage.Information);
 
                 this.DialogResult = true;
-                this.Close();
+            }
+            else if (result == Helper.SaveResult.NoChanges)
+            {
+                // Pokud nedošlo ke změnám, okno jen tiše zavřeme
+                this.DialogResult = false;
             }
             else
             {
@@ -125,7 +130,8 @@ namespace RoomReservationSystem.Desktop.UserControls.Dialogs
             }
         }
 
-        private async Task<bool> SaveUserToApiAsync(User userToSave)
+        // NÁVRATOVÝ TYP JE TEĎ Helper.SaveResult
+        private async Task<Helper.SaveResult> SaveUserToApiAsync(User userToSave)
         {
             try
             {
@@ -138,9 +144,21 @@ namespace RoomReservationSystem.Desktop.UserControls.Dialogs
                         response = await _apiService.Client.PutAsJsonAsync($"Api/Users/{userToSave.Id}", userToSave);
                         if (!response.IsSuccessStatusCode)
                         {
-                            Helper.ShowWarning($"Failed to update user: {userToSave.Username}.");
-                            return false;
+                            if (response.StatusCode == System.Net.HttpStatusCode.Conflict)
+                            {
+                                Helper.ShowWarning($"Username '{userToSave.Username}' already exists.");
+                            }
+                            else
+                            {
+                                Helper.ShowWarning($"Failed to update user: {userToSave.Username}.");
+                            }
+                            return Helper.SaveResult.Failed; // SELHÁNÍ
                         }
+                    }
+                    else
+                    {
+                        // ŽÁDNÉ ZMĚNY
+                        return Helper.SaveResult.NoChanges;
                     }
                 }
                 else
@@ -158,16 +176,16 @@ namespace RoomReservationSystem.Desktop.UserControls.Dialogs
                         {
                             Helper.ShowWarning($"Failed to create user: {userToSave.Username}.");
                         }
-                        return false;
+                        return Helper.SaveResult.Failed; // SELHÁNÍ
                     }
                 }
 
-                return true;
+                return Helper.SaveResult.Success; // ÚSPĚCH
             }
             catch (Exception)
             {
                 MessageBox.Show("Network error while communicating with the server.", "API Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                return false;
+                return Helper.SaveResult.Failed; // SELHÁNÍ
             }
         }
     }

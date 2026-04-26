@@ -214,7 +214,6 @@ namespace RoomReservationSystem.Desktop.UserControls
 
             bool needsReload = false;
 
-            // IMPORTANT - here have to be valid reservations
             foreach (var reservation in validToProcess)
             {
                 try
@@ -241,14 +240,13 @@ namespace RoomReservationSystem.Desktop.UserControls
             }
         }
 
-
         private async void RefreshBtn_OnClick(object sender, RoutedEventArgs e)
         {
             await LoadReservationsAsync();
 
         }
 
-        private async void activateBTN(object sender, RoutedEventArgs e)
+        private async void ActivateBtn_Click(object sender, RoutedEventArgs e)
         {
             var selected = ReservationsDG.SelectedItems.Cast<ReservationDTO>().ToList();
 
@@ -285,12 +283,11 @@ namespace RoomReservationSystem.Desktop.UserControls
             if (needsReload)
             {
                 await LoadReservationsAsync();
-
                 ReservationsDG_OnSelectedCellsChanged(null, null);
             }
         }
 
-        private async void canbcelBTN(object sender, RoutedEventArgs e)
+        private async void CancelBtn_Click(object sender, RoutedEventArgs e) // Přejmenováno z canbcelBTN
         {
             var selected = ReservationsDG.SelectedItems.Cast<ReservationDTO>().ToList();
 
@@ -330,5 +327,7 @@ namespace RoomReservationSystem.Desktop.UserControls
                 ReservationsDG_OnSelectedCellsChanged(null, null);
             }
         }
+
+
     }
 }

@@ -61,8 +61,8 @@
                 </Button>
 
                 <StackPanel Orientation="Vertical" Margin="10,0,10,0">
-                    <Button Content="Activate" Cursor="Hand" Background="Green" BorderThickness="0" Padding="5" Foreground="AliceBlue" Click="activateBTN" Margin="0,0,0,10"/>
-                    <Button Content="Cancel" Cursor="Hand" Background="DarkRed" Foreground="AliceBlue" BorderThickness ="0"  Padding="5" Click="canbcelBTN" />
+                    <Button Content="Activate" Cursor="Hand" Background="Green" BorderThickness="0" Padding="5" Foreground="AliceBlue" Click="ActivateBtn_Click" Margin="0,0,0,10"/>
+                    <Button Content="Cancel" Cursor="Hand" Background="DarkRed" Foreground="AliceBlue" BorderThickness ="0"  Padding="5" Click="CancelBtn_Click" />
                 </StackPanel>
             </WrapPanel>
 

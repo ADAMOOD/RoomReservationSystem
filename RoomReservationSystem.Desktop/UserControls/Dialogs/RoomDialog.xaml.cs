@@ -263,67 +263,115 @@ namespace RoomReservationSystem.Desktop.UserControls.Dialogs
 
             if (_rooms.Count == 0)
             {
-                Helper.ShowWarning("Please create a Room first.");
+                Helper.ShowWarning("Please create or edit a Room first.");
                 return;
             }
 
             ConfirmBtn.IsEnabled = false;
 
-            bool success = await SaveRoomsToApiAsync();
+            // Používáme náš nový Helper enum
+            Helper.SaveResult result = await SaveRoomsToApiAsync();
 
-            if (success)
+            if (result == Helper.SaveResult.Success)
             {
                 string message = _isEditMode ? "Rooms successfully updated!" : "Rooms successfully created!";
                 MessageBox.Show(message, "Success", MessageBoxButton.OK, MessageBoxImage.Information);
 
-                this.DialogResult = true;
-                this.Close();
+                this.DialogResult = true; // Úspěch -> zavřeme s true
+            }
+            else if (result == Helper.SaveResult.NoChanges)
+            {
+                // Žádná z místností v seznamu se reálně nezměnila -> zavřeme tiše
+                this.DialogResult = false;
             }
             else
             {
-                // Pokud došlo k chybě (např. chyba sítě), odemkneme tlačítko, ať to admin může zkusit znovu
+                // Pokud došlo k chybě, odemkneme tlačítko, ať to admin může zkusit znovu (nebo zavřít křížkem)
                 ConfirmBtn.IsEnabled = true;
             }
         }
 
         // --- KOMUNIKACE S API ---
 
-        private async Task<bool> SaveRoomsToApiAsync()
+        private async Task<Helper.SaveResult> SaveRoomsToApiAsync()
         {
             try
             {
+                bool anyChangesMade = false; // Sledujeme, jestli se alespoň jeden pokoj změnil
+
                 foreach (var room in _rooms)
                 {
                     HttpResponseMessage response;
                     if (_isEditMode)
                     {
                         var original = _originalRoomsToEdit.FirstOrDefault(r => r.Id == room.Id);
+
                         if (original != null && IsRoomChanged(original, room))
                         {
+                            // --- NOVÁ KONTROLA: Snížení kapacity nebo času ---
+                            if (room.Capacity < original.Capacity || room.MaxReservationMinutes < original.MaxReservationMinutes)
+                            {
+                                bool proceed = Helper.ShowWarning(
+                                    $"Warning: You are decreasing the capacity or maximum reservation time for room '{room.Name}'.\n\n" +
+                                    $"If there are any existing future reservations for this room, they might conflict with these new rules. " +
+                                    $"Please review the reservations and contact the organizers if necessary.\n\n" +
+                                    $"Do you still want to save these changes?");
+
+                                if (!proceed)
+                                {
+                                    return Helper.SaveResult.Failed;
+                                }
+                            }
+
+                            // --- Samotné uložení (pokud se nesnižovalo, nebo pokud admin varování odsouhlasil) ---
                             response = await _apiService.Client.PutAsJsonAsync($"Api/Rooms/{room.Id}", room);
                             if (!response.IsSuccessStatusCode)
                             {
-                                Helper.ShowWarning($"Failed to update room {room.Name}.");
-                                return false;
+                                if (response.StatusCode == System.Net.HttpStatusCode.Conflict)
+                                {
+                                    Helper.ShowWarning($"Room name '{room.Name}' already exists.");
+                                }
+                                else
+                                {
+                                    Helper.ShowWarning($"Failed to update room {room.Name}.");
+                                }
+                                return Helper.SaveResult.Failed;
                             }
+                            anyChangesMade = true;
                         }
                     }
                     else
                     {
+                        // Vytvoření nové místnosti (POST)
                         response = await _apiService.Client.PostAsJsonAsync("Api/Rooms", room);
                         if (!response.IsSuccessStatusCode)
                         {
-                            Helper.ShowWarning($"Failed to create room {room.Name}.");
-                            return false;
+                            if (response.StatusCode == System.Net.HttpStatusCode.Conflict)
+                            {
+                                Helper.ShowWarning($"Room name '{room.Name}' already exists.");
+                            }
+                            else
+                            {
+                                Helper.ShowWarning($"Failed to create room {room.Name}.");
+                            }
+                            return Helper.SaveResult.Failed;
                         }
+                        anyChangesMade = true; // Vždy true, protože vytváříme nový záznam
                     }
                 }
-                return true; // Vše prošlo úspěšně
+
+                // Vyhodnocení, jak cyklus dopadl
+                if (_isEditMode && !anyChangesMade)
+                {
+                    return Helper.SaveResult.NoChanges;
+                }
+
+                return Helper.SaveResult.Success;
             }
             catch (Exception)
             {
                 Helper.ShowWarning("Network error while communicating with the server.");
-                return false;
+                return Helper.SaveResult.Failed;
             }
         }
 
@@ -344,7 +392,6 @@ namespace RoomReservationSystem.Desktop.UserControls.Dialogs
 
         private void NumberOnly_PreviewTextInput(object sender, TextCompositionEventArgs e)
         {
-            // Pomocí tvého helperu pro odchytávání čísel
             Helper.NumbersOnly(sender, e);
         }
     }

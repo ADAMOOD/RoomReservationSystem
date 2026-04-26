@@ -314,34 +314,42 @@ namespace RoomReservationSystem.Desktop.UserControls.Dialogs
 
             if (_reservations.Count == 0)
             {
-                Helper.ShowWarning("Please create a reservation first.");
+                Helper.ShowWarning("Please create or edit a reservation first.");
                 return;
             }
 
             ConfirmReservationBtn.IsEnabled = false;
 
-            bool success = await SaveReservationsToApiAsync();
+            // Použití sdíleného Helper.SaveResult stavu
+            Helper.SaveResult result = await SaveReservationsToApiAsync();
 
-            if (success)
+            if (result == Helper.SaveResult.Success)
             {
                 string message = _isEditMode ? "Reservations successfully updated!" : "Reservations successfully created!";
                 MessageBox.Show(message, "Success", MessageBoxButton.OK, MessageBoxImage.Information);
 
-                this.DialogResult = true;
-                this.Close();
+                this.DialogResult = true; // Úspěch -> zavřeme s true
+            }
+            else if (result == Helper.SaveResult.NoChanges)
+            {
+                // Žádná z rezervací se reálně nezměnila -> zavřeme tiše
+                this.DialogResult = false;
             }
             else
             {
+                // Pokud to selhalo, odemkneme tlačítko
                 ConfirmReservationBtn.IsEnabled = true;
             }
         }
 
         // --- KOMUNIKACE S API ---
 
-        private async Task<bool> SaveReservationsToApiAsync()
+        private async Task<Helper.SaveResult> SaveReservationsToApiAsync()
         {
             try
             {
+                bool anyChangesMade = false;
+
                 foreach (var res in _reservations)
                 {
                     HttpResponseMessage response;
@@ -354,9 +362,18 @@ namespace RoomReservationSystem.Desktop.UserControls.Dialogs
                             response = await _apiService.Client.PutAsJsonAsync($"Api/Reservations/{res.Id}", res);
                             if (!response.IsSuccessStatusCode)
                             {
-                                Helper.ShowWarning($"Failed to update reservation in {res.RoomName}.");
-                                return false;
+                                // Edge Case 1 ošetřen: Souběžná kolize na backendu
+                                if (response.StatusCode == System.Net.HttpStatusCode.Conflict)
+                                {
+                                    Helper.ShowWarning($"Reservation for room '{res.RoomName}' conflicts with another booking.");
+                                }
+                                else
+                                {
+                                    Helper.ShowWarning($"Failed to update reservation in {res.RoomName}.");
+                                }
+                                return Helper.SaveResult.Failed;
                             }
+                            anyChangesMade = true;
                         }
                     }
                     else
@@ -364,20 +381,35 @@ namespace RoomReservationSystem.Desktop.UserControls.Dialogs
                         response = await _apiService.Client.PostAsJsonAsync("Api/Reservations", res);
                         if (!response.IsSuccessStatusCode)
                         {
-                            Helper.ShowWarning($"Failed to create reservation in {res.RoomName}.");
-                            return false;
+                            // Edge Case 1 ošetřen: Souběžná kolize na backendu
+                            if (response.StatusCode == System.Net.HttpStatusCode.Conflict)
+                            {
+                                Helper.ShowWarning($"Reservation for room '{res.RoomName}' conflicts with another booking.");
+                            }
+                            else
+                            {
+                                Helper.ShowWarning($"Failed to create reservation in {res.RoomName}.");
+                            }
+                            return Helper.SaveResult.Failed;
                         }
+                        anyChangesMade = true;
                     }
                 }
-                return true;
+
+                // Vyhodnocení, zda se vůbec něco na server odeslalo
+                if (_isEditMode && !anyChangesMade)
+                {
+                    return Helper.SaveResult.NoChanges;
+                }
+
+                return Helper.SaveResult.Success;
             }
             catch (Exception)
             {
-                MessageBox.Show("Network error while communicating with the server.", "API Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                return false;
+                Helper.ShowWarning("Network error while communicating with the server.");
+                return Helper.SaveResult.Failed;
             }
         }
-
         private bool IsReservationChanged(ReservationDTO original, ReservationDTO current)
         {
             return original.RoomId != current.RoomId ||
@@ -405,5 +437,6 @@ namespace RoomReservationSystem.Desktop.UserControls.Dialogs
         {
             Helper.NumbersOnly(sender, e);
         }
+
     }
 }

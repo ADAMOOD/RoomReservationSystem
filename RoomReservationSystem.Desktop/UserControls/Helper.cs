@@ -13,6 +13,12 @@ namespace RoomReservationSystem.Desktop.UserControls
 {
     public static class Helper
     {
+        public  enum SaveResult
+        {
+            Success,
+            NoChanges,
+            Failed
+        }
         private static readonly Regex _regex = new Regex("[^0-9.-]+");
 
         public static void NumbersOnly(object sender, TextCompositionEventArgs e)

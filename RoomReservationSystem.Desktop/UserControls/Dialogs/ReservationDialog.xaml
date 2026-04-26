@@ -34,7 +34,7 @@
 
 
                     <TextBlock Text="Number of people" FontWeight="SemiBold" Foreground="#4B5563" Margin="0,0,0,5" />
-                    <TextBox x:Name="NumberOfPeopleTB" Tag="Number of people" PreviewTextInput="NumberOnly_PreviewTextInput" Padding="8" Margin="0,0,0,15" />
+                    <TextBox x:Name="NumberOfPeopleTB" Tag="Number of people" PreviewTextInput="NumberOnly_PreviewTextInput" Padding="8" Margin="0,0,0,15"  />
 
                     <Grid Margin="0,0,0,15">
                         <Grid.ColumnDefinitions>
