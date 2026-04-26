@@ -21,8 +21,10 @@
 
                 <StackPanel Margin="0,0,20,0">
                     <TextBlock Text="Search (ID/Username)" FontSize="12" Foreground="#6B7280" Margin="0,0,0,5" />
-                    <TextBox x:Name="SearchTB" Width="250" Padding="6" BorderBrush="#D1D5DB" BorderThickness="1" TextChanged="SearchTB_TextChanged"/>
+                    <TextBox x:Name="SearchTB" Width="250" Padding="6" BorderBrush="#D1D5DB" BorderThickness="1" TextChanged="Filter_Changed"/>
                 </StackPanel>
+
+                <CheckBox x:Name="ShowDeletedCB" Content="Show deleted users" VerticalAlignment="Center" Margin="0,15,20,0" Click="Filter_Changed" Foreground="#4B5563" FontWeight="SemiBold"/>
 
                 <Button x:Name="refreshBtn" Click="RefreshBtn_OnClick" Margin="0,15,0,0" Width="36" Height="36" Cursor="Hand" ToolTip="Refresh">
                     <Button.Template>

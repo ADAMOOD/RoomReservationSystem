@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using RoomReservatingSystem.Shared;
 using RoomReservationSystem.Repositories;
 using System.Threading.Tasks;
 
@@ -23,6 +24,20 @@ namespace RoomReservationSystem.Controllers.Api
         {
             var users = await _userRepository.GetAllUsersAsync();
             return Ok(users);
+        }
+
+        [Authorize(Policy = "AdminOnly")]
+        [HttpPost]
+        public async Task<IActionResult> CreateUserAsync([FromBody] User newUser)
+        {
+            var resultId = await _userRepository.CreateUserAsync(newUser);
+
+            if (resultId == null)
+            {
+                return Conflict("Username is already taken.");
+            }
+
+            return Ok();
         }
 
         [HttpDelete("{id}")]
@@ -50,6 +65,29 @@ namespace RoomReservationSystem.Controllers.Api
             }
 
             return NoContent(); 
+        }
+        [Authorize(Policy = "AdminOnly")]
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateUserAsync(int id, [FromBody] User updatedUser)
+        {
+            if (id != updatedUser.Id)
+            {
+                return BadRequest("User ID mismatch.");
+            }
+
+            var existingUser = await _userRepository.GetUserByIdAsync(id);
+            if (existingUser == null)
+            {
+                return NotFound("User not found.");
+            }
+            bool success = await _userRepository.UpdateUserAsync(updatedUser);
+
+            if (success)
+            {
+                return Ok();
+            }
+
+            return StatusCode(500, "An error occurred while updating the user.");
         }
     }
 }

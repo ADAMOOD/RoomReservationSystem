@@ -3,8 +3,12 @@ CREATE TABLE [User] (
     Id INT IDENTITY(1,1) PRIMARY KEY,
     Username NVARCHAR(100) NOT NULL,
     PasswordHash NVARCHAR(255) NOT NULL,
-    IsAdmin BIT NOT NULL DEFAULT 0 -- V SQL je 'bool' reprezentován jako BIT (0 = false, 1 = true)
+    IsAdmin BIT NOT NULL DEFAULT 0,
+    IsDeleted BIT NOT NULL DEFAULT 0
 );
+
+-- Přidání filtrovaného unikátního indexu pro jméno uživatele
+CREATE UNIQUE INDEX UQ_User_Username ON [User](Username) WHERE IsDeleted = 0;
 
 -- 2. TABULKA: Room (mapování na MaxReservationMinutes)
 CREATE TABLE [Room] (

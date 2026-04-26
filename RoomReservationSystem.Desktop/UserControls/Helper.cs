@@ -19,9 +19,11 @@ namespace RoomReservationSystem.Desktop.UserControls
         {
             e.Handled = _regex.IsMatch(e.Text);
         }
-        public static void ShowWarning(string message)
+        public static bool ShowWarning(string message)
         {
-            MessageBox.Show(message, "Validation Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBoxResult result = MessageBox.Show(message, "Validation Error", MessageBoxButton.OKCancel, MessageBoxImage.Warning);
+
+            return result == MessageBoxResult.OK;
         }
 
         public static bool ValidateRequiredFields(params TextBox[] fields)

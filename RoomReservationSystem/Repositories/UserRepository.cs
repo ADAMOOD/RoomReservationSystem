@@ -61,13 +61,12 @@ namespace RoomReservationSystem.Repositories
                             ActiveStatus = ReservationStatus.Active
                         }, transaction);
 
-                        // If both succeed, commit the transaction
                         transaction.Commit();
                         return true;
                     }
                     catch
                     {
-                        // If anything fails, rollback the transaction
+
                         transaction.Rollback();
                         return false;
                     }
@@ -80,7 +79,21 @@ namespace RoomReservationSystem.Repositories
             user.PasswordHash = BCrypt.Net.BCrypt.EnhancedHashPassword(user.PasswordHash);
             using (IDbConnection db = new SqlConnection(_connection))
             {
-                return await db.InsertAsync<User>(user);
+                try
+                {
+                    var newId = await db.InsertAsync<User>(user);
+                    return (int)newId;
+                }
+                catch (SqlException ex) when (ex.Number == 2601 || ex.Number == 2627)
+                {
+                    // Error for duplicate key (unique constraint violation)
+                    return null;
+                }
+                catch (Exception)
+                {
+                    // Other database errors
+                    return null;
+                }
             }
         }
 
@@ -88,7 +101,43 @@ namespace RoomReservationSystem.Repositories
         {
             using (IDbConnection db = new SqlConnection(_connection))
             {
-                return await db.GetListAsync<User>("WHERE IsDeleted = 0");
+                return await db.GetListAsync<User>();
+            }
+        }
+        public async Task<bool> UpdateUserAsync(User user)
+        {
+            using (IDbConnection db = new SqlConnection(_connection))
+            {
+                string sql;
+                var parameters = new DynamicParameters();
+                parameters.Add("@Id", user.Id);
+                parameters.Add("@Username", user.Username);
+                parameters.Add("@IsAdmin", user.IsAdmin);
+
+                // Kontrola, zda bylo zasláno nové heslo (není null ani prázdné)
+                if (!string.IsNullOrWhiteSpace(user.PasswordHash))
+                {
+                    // Hashing probíhá zde na backendu těsně před uložením
+                    string newHash = BCrypt.Net.BCrypt.EnhancedHashPassword(user.PasswordHash);
+                    parameters.Add("@PasswordHash", newHash);
+
+                    sql = @"UPDATE [User] 
+                    SET Username = @Username, 
+                        PasswordHash = @PasswordHash, 
+                        IsAdmin = @IsAdmin 
+                    WHERE Id = @Id";
+                }
+                else
+                {
+                    // Pokud heslo nepřišlo, sloupec PasswordHash v SQL vynecháme
+                    sql = @"UPDATE [User] 
+                    SET Username = @Username, 
+                        IsAdmin = @IsAdmin 
+                    WHERE Id = @Id";
+                }
+
+                int rowsAffected = await db.ExecuteAsync(sql, parameters);
+                return rowsAffected > 0;
             }
         }
     }
