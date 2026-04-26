@@ -1,0 +1,83 @@
+﻿<UserControl x:Class="RoomReservationSystem.Desktop.UserControls.ReservationHistoryControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:RoomReservationSystem.Desktop.UserControls"
+             mc:Ignorable="d" 
+             d:DesignHeight="450" d:DesignWidth="800">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+
+        <Border Grid.Row="2" Background="#F9FAFB" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="5" Margin="10,0,10,15" Padding="10">
+            <WrapPanel Orientation="Horizontal">
+
+                <StackPanel Margin="0,0,20,10">
+                    <TextBlock Text="Room (ID/Name)" FontSize="12" Foreground="#6B7280" Margin="0,0,0,5" />
+                    <TextBox x:Name="FilterRoomTB" Width="200" Padding="6" BorderBrush="#D1D5DB" BorderThickness="1" TextChanged="Filter_TextChanged"/>
+                </StackPanel>
+
+                <StackPanel Margin="0,0,20,10">
+                    <TextBlock Text="User (ID/Name)" FontSize="12" Foreground="#6B7280" Margin="0,0,0,5" />
+                    <TextBox x:Name="FilterUserTB" Width="200" Padding="6" BorderBrush="#D1D5DB" BorderThickness="1" TextChanged="Filter_TextChanged"/>
+                </StackPanel>
+
+                <StackPanel Margin="0,0,0,10">
+                    <TextBlock Text="Purpose" FontSize="12" Foreground="#6B7280" Margin="0,0,0,5" />
+                    <TextBox x:Name="FilterPurposeTB" Width="200" Padding="6" BorderBrush="#D1D5DB" BorderThickness="1" TextChanged="Filter_TextChanged"/>
+                </StackPanel>
+
+                <Button x:Name="refreshBtn" Click="RefreshBtn_OnClick" Margin="10" Width="36" Height="36" Cursor="Hand" ToolTip="Refresh">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="btnBorder" Background="Transparent" CornerRadius="18" BorderBrush="#E5E7EB" BorderThickness="1">
+                                <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="20">⟲</TextBlock>
+                            </Border>
+
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="btnBorder" Property="Background" Value="#F3F4F6"/>
+                                    <Setter TargetName="btnBorder" Property="BorderBrush" Value="#D1D5DB"/>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="True">
+                                    <Setter TargetName="btnBorder" Property="Background" Value="#E5E7EB"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Button.Template>
+                </Button>
+
+            </WrapPanel>
+
+        </Border>
+
+
+        <DataGrid x:Name="HistoryDG"
+                  Grid.Row="3" 
+                  AutoGenerateColumns="True" 
+                  Margin="10,10,10,15"
+                  IsReadOnly="True" 
+                  CanUserAddRows="False" 
+                  CanUserDeleteRows="False" 
+
+                  SelectionMode="Extended" 
+                  SelectionUnit="FullRow" 
+                  AutoGeneratingColumn="HistoryDG_OnAutoGeneratingColumn"
+                  HeadersVisibility="Column" 
+                  AlternatingRowBackground="#FFF7F9FA" 
+                  RowBackground="White"
+                  BorderBrush="#DDDDDD" 
+                  BorderThickness="1"
+                  HorizontalGridLinesBrush="#EEEEEE"
+                  VerticalGridLinesBrush="Transparent"
+                  ColumnWidth="*">
+        </DataGrid>
+    </Grid>
+</UserControl>

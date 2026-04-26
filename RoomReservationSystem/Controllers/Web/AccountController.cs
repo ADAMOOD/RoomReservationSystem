@@ -78,6 +78,9 @@ namespace RoomReservationSystem.Controllers.Web
             reservation.Status = ReservationStatus.Cancelled;
             await _reservationRepository.UpdateReservationAsync(reservation);
 
+            // record history of reservation cancellation (if reservation cancellation was successful)
+            await _reservationRepository.AddHistoryRecordAsync(reservation.Id, ReservationStatus.Active, ReservationStatus.Cancelled, loggedUserId);
+
             return Json(new { success = true, message = "Reservation canceled." });
         }
         [HttpPost]

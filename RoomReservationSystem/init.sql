@@ -33,12 +33,12 @@ CREATE TABLE [Reservation] (
 
 -- 4. TABULKA: ReservationHistory
 CREATE TABLE [ReservationHistory] (
-    Id INT IDENTITY(1,1) PRIMARY KEY,
-    ReservationId INT NOT NULL FOREIGN KEY REFERENCES [Reservation](Id),
-    OldStatus INT NULL, -- Povoleno NULL, viz moje poznámka pod kódem!
-    NewStatus INT NOT NULL,
-    ChangedAt DATETIME2 NOT NULL DEFAULT GETDATE(),
-    ChangedByUserId INT NOT NULL FOREIGN KEY REFERENCES [User](Id)
+                                      Id INT IDENTITY(1,1) PRIMARY KEY,
+                                      ReservationId INT NOT NULL FOREIGN KEY REFERENCES [Reservation](Id),
+                                      OldStatus INT NULL,
+                                      NewStatus INT NOT NULL,
+                                      ChangedAt DATETIME2 NOT NULL DEFAULT GETDATE(),
+                                      ChangedByUserId INT NOT NULL FOREIGN KEY REFERENCES [User](Id)
 );
 
 -- ==========================================

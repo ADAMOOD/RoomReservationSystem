@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using RoomReservatingSystem.Shared;
 using RoomReservationSystem.Repositories;
+using System.Security.Claims;
 
 namespace RoomReservationSystem.Controllers.Api
 {
@@ -41,7 +42,17 @@ namespace RoomReservationSystem.Controllers.Api
         [HttpPost]
         public async Task<IActionResult> CreateReservationsAsync([FromBody] Reservation newReservation)
         {
-            await _reservationRepository.CreateReservationAsync(newReservation);
+            //first we take the user from the token, then we create the reservation and at the end we add the history record (if reservation creation was successful)
+            int loggedUserId = int.Parse(User.FindFirstValue("UserId"));
+            // collision check
+            int? newId = await _reservationRepository.CreateReservationAsync(newReservation);
+
+            // if newId is null, it means that there was a collision and the reservation was not created, so we return a bad request with a message
+            if (newId.HasValue)
+            {
+                await _reservationRepository.AddHistoryRecordAsync(newId.Value, null, ReservationStatus.Active, loggedUserId);
+            }
+
             return Ok();
         }
         [Authorize(Policy = "AdminOnly")]
@@ -62,29 +73,18 @@ namespace RoomReservationSystem.Controllers.Api
         public async Task<IActionResult> ActivateReservationAsync(int id)
         {
             var reservation = await _reservationRepository.GetReservationByIdAsync(id);
+            if (reservation == null) return NotFound("Reservation not found.");
+            if (reservation.Status == ReservationStatus.Active) return BadRequest("Reservation is already active.");
 
-            if (reservation == null)
-                return NotFound("Reservation not found.");
+            bool hasCollision = await _reservationRepository.CheckCollisionAsync(reservation.RoomId, reservation.StartTime, reservation.EndTime, reservation.Id);
+            if (hasCollision) return BadRequest("Room is already booked for this time slot.");
 
-            if (reservation.Status == ReservationStatus.Active)
-                return BadRequest("Reservation is already active.");
-
-            // collision check 
-            bool hasCollision = await _reservationRepository.CheckCollisionAsync(
-                reservation.RoomId,
-                reservation.StartTime,
-                reservation.EndTime,
-                reservation.Id);
-
-            if (hasCollision)
-                return BadRequest("Room is already booked for this time slot.");
-
-            reservation.Status = ReservationStatus.Active;
-
+            // change status in DB
             await _reservationRepository.UpdateStatusAsync(id, ReservationStatus.Active);
 
-            // 5. Zápis do historie (Repozitář udělá hloupý INSERT do tabulky historie) az nakonec projektu
-            //await _reservationRepository.AddHistoryRecordAsync(id, ReservationStatus.Active, DateTime.Now);
+            // record history
+            int loggedUserId = int.Parse(User.FindFirstValue("UserId"));
+            await _reservationRepository.AddHistoryRecordAsync(id, ReservationStatus.Cancelled, ReservationStatus.Active, loggedUserId);
 
             return Ok();
         }
@@ -92,21 +92,25 @@ namespace RoomReservationSystem.Controllers.Api
         public async Task<IActionResult> CancelReservationAsync(int id)
         {
             var reservation = await _reservationRepository.GetReservationByIdAsync(id);
+            if (reservation == null) return NotFound("Reservation not found.");
+            if (reservation.Status == ReservationStatus.Cancelled) return BadRequest("Reservation is already cancelled.");
 
-            if (reservation == null)
-                return NotFound("Reservation not found.");
-
-            if (reservation.Status == ReservationStatus.Cancelled)
-                return BadRequest("Reservation is already cancelled.");
-            
-            reservation.Status = ReservationStatus.Cancelled;   
-
+            // change status in DB
             await _reservationRepository.UpdateStatusAsync(id, ReservationStatus.Cancelled);
 
-            // 5. Zápis do historie (Repozitář udělá hloupý INSERT do tabulky historie) az nakonec projektu
-            //await _reservationRepository.AddHistoryRecordAsync(id, ReservationStatus.Active, DateTime.Now);
+            // record history
+            int loggedUserId = int.Parse(User.FindFirstValue("UserId"));
+            await _reservationRepository.AddHistoryRecordAsync(id, ReservationStatus.Active, ReservationStatus.Cancelled, loggedUserId);
 
             return Ok();
+        }
+
+        [Authorize(Policy = "AdminOnly")]
+        [HttpGet("history")]
+        public async Task<IActionResult> GetReservationHistoryAsync()
+        {
+            var history = await _reservationRepository.GetReservationHistoryAsync();
+            return Ok(history);
         }
 
     }

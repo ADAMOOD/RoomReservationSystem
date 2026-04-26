@@ -18,6 +18,9 @@
             <TabItem Header="Reservations">
                 <UserControls:ReservationsControl x:Name="ReservationsTab"></UserControls:ReservationsControl>
             </TabItem>
+            <TabItem Header="Reservation History">
+                <UserControls:ReservationHistoryControl x:Name="ReservationHistoryTab"></UserControls:ReservationHistoryControl>
+            </TabItem>
         </TabControl>
     </Grid>
 </Window>

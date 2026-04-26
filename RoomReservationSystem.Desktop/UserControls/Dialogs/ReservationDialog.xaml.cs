@@ -73,11 +73,12 @@ namespace RoomReservationSystem.Desktop.UserControls.Dialogs
                 var rooms = await _apiService.Client.GetFromJsonAsync<List<Room>>("Api/Rooms");
                 var users = await _apiService.Client.GetFromJsonAsync<List<User>>("Api/Users");
 
-                // STÁHNEME SI VŠECHNY REZERVACE PRO KONTROLU KOLIZÍ
                 _existingDbReservations = await _apiService.Client.GetFromJsonAsync<List<ReservationDTO>>("Api/Reservations") ?? new List<ReservationDTO>();
 
                 RoomComboBox.ItemsSource = rooms;
-                UserComboBox.ItemsSource = users;
+
+                // OPRAVA: Do ComboBoxu přiřadíme pouze ty uživatele, kteří NEJSOU smazaní
+                UserComboBox.ItemsSource = users?.Where(u => !u.IsDeleted).ToList();
             }
             catch (Exception)
             {

@@ -85,6 +85,13 @@ namespace RoomReservationSystem.Controllers.Web
                 Status = ReservationStatus.Active
             };
             await _reservationRepository.CreateReservationAsync(newReservation);
+
+            //record history of reservation creation (if reservation creation was successful)
+            int? newId = await _reservationRepository.CreateReservationAsync(newReservation);
+            if (newId.HasValue)
+            {
+                await _reservationRepository.AddHistoryRecordAsync(newId.Value, null, ReservationStatus.Active, loggedUserId);
+            }
             TempData["SuccessMessage"] = $"Reservation {model.RoomName} has been successfuly made!";
             return RedirectToAction("Index");
         }

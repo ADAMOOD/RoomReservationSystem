@@ -96,24 +96,52 @@ namespace RoomReservationSystem.Repositories
             }
         }
 
+        public async Task AddHistoryRecordAsync(int reservationId, ReservationStatus? oldStatus, ReservationStatus newStatus, int changedByUserId)
+        {
+            using (IDbConnection db = new SqlConnection(_connectionString))
+            {
+                string sql = @"
+            INSERT INTO ReservationHistory (ReservationId, OldStatus, NewStatus, ChangedByUserId)
+            VALUES (@ReservationId, @OldStatus, @NewStatus, @ChangedByUserId)";
+
+                await db.ExecuteAsync(sql, new
+                {
+                    ReservationId = reservationId,
+                    OldStatus = oldStatus,
+                    NewStatus = newStatus,
+                    ChangedAt = DateTime.Now,
+                    ChangedByUserId = changedByUserId
+                });
+            }
+        }
+
+        
         public async Task<bool> DeleteReservationAsync(int id)
         {
-            using (IDbConnection conncection = new SqlConnection(_connectionString))
+            using (IDbConnection db = new SqlConnection(_connectionString))
             {
-                try
+                db.Open();
+                using (var transaction = db.BeginTransaction())
                 {
-                    int deleted = await conncection.DeleteAsync<Reservation>(id);
-                    return deleted > 0;
-                }
-                catch (SqlException)
-                {
-                    return false;
-                }
-                catch (Exception)
-                {
-                    return false;
-                }
+                    try
+                    {
+                        // delete history records first to maintain referential integrity
+                        string deleteHistorySql = "DELETE FROM ReservationHistory WHERE ReservationId = @Id";
+                        await db.ExecuteAsync(deleteHistorySql, new { Id = id }, transaction);
 
+                        // now we can delete the actual reservation
+                        string deleteReservationSql = "DELETE FROM Reservation WHERE Id = @Id";
+                        int deleted = await db.ExecuteAsync(deleteReservationSql, new { Id = id }, transaction);
+
+                        transaction.Commit();
+                        return deleted > 0;
+                    }
+                    catch (Exception)
+                    {
+                        transaction.Rollback();
+                        return false;
+                    }
+                }
             }
         }
         public async Task<IEnumerable<UserProfileReservationViewModel>> GetFilteredReservationsAsync(int roomId, string? purpose, bool hideCancelled, int? loggedUserId)
@@ -212,6 +240,30 @@ namespace RoomReservationSystem.Repositories
                 {
                     return false;
                 }
+            }
+        }
+
+        public async Task<IEnumerable<ReservationHistoryDTO>> GetReservationHistoryAsync()
+        {
+            using (IDbConnection db = new SqlConnection(_connectionString))
+            {
+                string sql = @"
+            SELECT 
+                rh.Id, 
+                rh.ReservationId, 
+                rh.OldStatus, 
+                rh.NewStatus, 
+                rh.ChangedAt,
+                u.Username AS ChangedByUserName,
+                rm.Name AS RoomName,
+                re.Purpose AS Purpose
+            FROM ReservationHistory rh
+            LEFT JOIN [User] u ON rh.ChangedByUserId = u.Id
+            LEFT JOIN Reservation re ON rh.ReservationId = re.Id
+            LEFT JOIN Room rm ON re.RoomId = rm.Id
+            ORDER BY rh.ChangedAt DESC";
+
+                return await db.QueryAsync<ReservationHistoryDTO>(sql);
             }
         }
     }

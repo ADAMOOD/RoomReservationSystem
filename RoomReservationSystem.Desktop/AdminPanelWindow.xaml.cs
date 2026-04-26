@@ -27,6 +27,7 @@ namespace RoomReservationSystem.Desktop
             UsersTab.Setup(_apiService);
             RoomsTab.Setup(_apiService);
             ReservationsTab.Setup(_apiService);
+            ReservationHistoryTab.Setup(_apiService);
         }
     }
 }
