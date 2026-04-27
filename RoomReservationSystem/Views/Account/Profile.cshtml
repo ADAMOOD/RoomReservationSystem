@@ -27,13 +27,11 @@
 
     @{
         var now = DateTime.Now;
-        // 1. Plánované: Aktivní a začátek je v budoucnu
+
         var scheduledReservations = Model.Where(r => r.Status == ReservationStatus.Active && r.StartTime > now);
 
-        // 2. Probíhající: Aktivní, už začaly a ještě neskončily
         var ongoingReservations = Model.Where(r => r.Status == ReservationStatus.Active && r.StartTime <= now && r.EndTime >= now);
 
-        // 3. Historie: Zrušené NEBO ty, co už reálně skončily
         var historyReservations = Model.Where(r => r.Status == ReservationStatus.Cancelled || r.EndTime < now);
     }
 
@@ -175,7 +173,7 @@
 <script>
     document.addEventListener('DOMContentLoaded', function () {
 
-        // --- 1. ČÁST: HLÍDAČ ČASU (PROGRESS BAR A PŘESUNY) ---
+        // --- PART 1: LIVE RESERVATION TRACKER ---
         function updateLiveReservations() {
             const now = new Date();
 
@@ -184,19 +182,16 @@
                 const end = new Date(row.dataset.end);
                 const currentTbodyId = row.closest('tbody').id;
 
-                // 1. Z UPCOMING DO IN PROGRESS
+                // Move from 'Upcoming' to 'In Progress'
                 if (now >= start && now < end && currentTbodyId === 'active-tbody') {
-                    // Smazat sloupec s tlačítkem Cancel
                     const actionCell = row.querySelector('.action-cell');
                     if (actionCell) actionCell.remove();
 
-                    // Přidat Progress Bar
                     row.querySelector('.status-cell').innerHTML = `
-                                                            <div class="progress w-100" style="height: 20px;">
-                                        <div class="progress-bar bg-warning progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%;">&nbsp;</div>
-                                    </div>`;
+                        <div class="progress w-100" style="height: 20px;">
+                            <div class="progress-bar bg-warning progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%;">&nbsp;</div>
+                        </div>`;
 
-                    // Přesun
                     document.getElementById('inprogress-tbody').appendChild(row);
                     document.getElementById('inprogress-table-container').classList.remove('d-none');
                     document.getElementById('inprogress-empty-state').classList.add('d-none');
@@ -204,37 +199,33 @@
                     checkEmptyTables();
                 }
 
-                // 2. Z IN PROGRESS DO HISTORY
+                // Move from 'In Progress' to 'History'
                 if (now >= end && currentTbodyId === 'inprogress-tbody') {
-                    // Přepsat Progress bar na Completed badge
                     row.querySelector('.status-cell').innerHTML = '<span class="badge bg-info text-dark">Completed</span>';
 
-                    // Přesun
                     document.getElementById('history-tbody').prepend(row);
                     document.getElementById('history-table-container').classList.remove('d-none');
                     document.getElementById('history-empty-state').classList.add('d-none');
 
                     checkEmptyTables();
-                    row.classList.remove('live-row'); // V historii už to nesledujeme
+                    row.classList.remove('live-row');
                 }
 
-                // 3. AKTUALIZACE PROGRESS BARU
+                // Update progress bar
                 if (currentTbodyId === 'inprogress-tbody') {
                     const total = end - start;
                     const elapsed = now - start;
                     let percent = (elapsed / total) * 100;
-                    percent = Math.min(Math.max(percent, 0), 100); // Drží to mezi 0 a 100
+                    percent = Math.min(Math.max(percent, 0), 100);
 
                     const bar = row.querySelector('.progress-bar');
                     if (bar) {
                         bar.style.width = percent + "%";
-
                     }
                 }
             });
         }
 
-        // Pomocná funkce na skrytí prázdných tabulek
         function checkEmptyTables() {
             if (document.getElementById('active-tbody').children.length === 0) {
                 document.getElementById('active-table-container').classList.add('d-none');
@@ -246,12 +237,10 @@
             }
         }
 
-        // Spustit ihned a pak každou sekundu
         updateLiveReservations();
         setInterval(updateLiveReservations, 1000);
 
-
-        // --- 2. ČÁST: AJAX PRO MAZÁNÍ ---
+        // --- PART 2: AJAX CANCELLATION ---
         const cancelButtons = document.querySelectorAll('.cancel-btn');
 
         cancelButtons.forEach(button => {
@@ -262,42 +251,34 @@
                     return;
                 }
 
-                // disable clicking of the button
                 this.disabled = true;
                 this.innerHTML = "Cancelling...";
 
                 fetch(`/Account/CancelReservation/${reservationId}`, {
                     method: 'POST'
                 })
-                    .then(response => response.json()) // Expecting JSON response
+                    .then(response => response.json())
                     .then(data => {
                         if (data.success) {
                             const row = document.getElementById(`row-${reservationId}`);
 
-                            // Zastavit živé sledování, protože rezervace je zrušena
                             row.classList.remove('live-row');
 
-                            // change badge to canceled
                             const statusCell = row.querySelector('.status-cell');
                             if(statusCell) {
                                 statusCell.innerHTML = '<span class="badge bg-secondary">Cancelled</span>';
                             }
 
-                            // table history doesnt have collumn action so we have to remove it
                             const actionCell = row.querySelector('.action-cell');
                             if (actionCell) {
                                 actionCell.remove();
                             }
 
                             document.getElementById('history-tbody').prepend(row);
-
-                            // 5. Zviditelníme tabulku historie a skryjeme hlášku "empty"
                             document.getElementById('history-table-container').classList.remove('d-none');
                             document.getElementById('history-empty-state').classList.add('d-none');
 
-                            // 6. Zkontrolujeme aktivní tabulku
                             checkEmptyTables();
-
                         } else {
                             alert("Something went wrong: " + data.message);
                             this.disabled = false;

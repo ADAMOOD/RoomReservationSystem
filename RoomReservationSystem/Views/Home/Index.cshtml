@@ -85,7 +85,7 @@
 
         var calendarEl = document.getElementById('global-calendar');
 
-        // Inicializace kalendáře
+        // Calendar init
         var calendar = new FullCalendar.Calendar(calendarEl, {
             initialView: 'timeGridWeek',
             height: 650,
@@ -94,27 +94,25 @@
                 center: 'title',
                 right: 'dayGridMonth,timeGridWeek,timeGridDay'
             },
-            // ZDE PŘIJDE MAGIE: Místo statické URL použijeme funkci,
-            // která si před každým načtením dat přečte hodnoty z filtru!
+            // here we use a custom function to load events, instead of a static URL
             events: function(fetchInfo, successCallback, failureCallback) {
 
-                // 1. Získáme aktuální hodnoty z našeho filtru
                 var roomId = document.getElementById('roomSelect').value;
                 var purpose = document.getElementById('searchPurpose').value;
                 var hideCancelled = document.getElementById('hideCancelled').checked;
 
-                // U checkboxu pro "moje rezervace" musíme ověřit, jestli na stránce vůbec existuje
+                //check box desnt exist for unsigned user
                 var onlyMyCheckbox = document.getElementById('onlyMyReservations');
                 var onlyMine = onlyMyCheckbox ? onlyMyCheckbox.checked : false;
 
-                // 2. Sestavíme URL pro náš budoucí API endpoint (zatím neexistuje)
+                // url bind
                 var apiUrl = `/Api/GetGlobalEvents?roomId=${roomId}&purpose=${purpose}&hideCancelled=${hideCancelled}&onlyMine=${onlyMine}`;
 
-                // 3. Pošleme požadavek na server
+                // send request
                 fetch(apiUrl)
                     .then(response => response.json())
                     .then(data => {
-                        successCallback(data); // Předáme data FullCalendaru k vykreslení
+                        successCallback(data); // Pass data to FullCalendar for rendering
                     })
                     .catch(error => {
                         console.error("Error occured when loading a calendar:", error);
@@ -125,7 +123,7 @@
 
         calendar.render();
 
-        // 4. Když uživatel klikne na "Apply Filters", donutíme kalendář načíst data znovu
+        // if user clicks again on filter
         document.getElementById('applyFiltersBtn').addEventListener('click', function() {
             calendar.refetchEvents();
         });

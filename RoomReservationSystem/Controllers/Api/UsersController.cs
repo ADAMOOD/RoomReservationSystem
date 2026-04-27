@@ -26,7 +26,6 @@ namespace RoomReservationSystem.Controllers.Api
             return Ok(users);
         }
 
-        [Authorize(Policy = "AdminOnly")]
         [HttpPost]
         public async Task<IActionResult> CreateUserAsync([FromBody] User newUser)
         {
@@ -66,7 +65,6 @@ namespace RoomReservationSystem.Controllers.Api
 
             return NoContent(); 
         }
-        [Authorize(Policy = "AdminOnly")]
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateUserAsync(int id, [FromBody] User updatedUser)
         {

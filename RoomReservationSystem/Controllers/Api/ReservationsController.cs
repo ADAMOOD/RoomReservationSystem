@@ -64,7 +64,7 @@ namespace RoomReservationSystem.Controllers.Api
         {
             //ensure that the Id in the URL matches the Id in the body (if body contains Id)
             updatedReservation.Id = id;
-            bool success = await _reservationRepository.UpdateRoomAsync(updatedReservation);
+            bool success = await _reservationRepository.UpdateReservationAsync(updatedReservation);
             if (!success)
             {
                 return NotFound();

@@ -129,10 +129,10 @@ namespace RoomReservationSystem.Repositories
                 parameters.Add("@Username", user.Username);
                 parameters.Add("@IsAdmin", user.IsAdmin);
 
-                // Kontrola, zda bylo zasláno nové heslo (není null ani prázdné)
+                // check if password was provided, if yes, we hash it and include in the update, if not, we leave the existing password hash unchanged
                 if (!string.IsNullOrWhiteSpace(user.PasswordHash))
                 {
-                    // Hashing probíhá zde na backendu těsně před uložením
+                    // hashing the new password using BCrypt and adding it to the parameters
                     string newHash = BCrypt.Net.BCrypt.EnhancedHashPassword(user.PasswordHash);
                     parameters.Add("@PasswordHash", newHash);
 
@@ -144,7 +144,7 @@ namespace RoomReservationSystem.Repositories
                 }
                 else
                 {
-                    // Pokud heslo nepřišlo, sloupec PasswordHash v SQL vynecháme
+                    // If no password was provided, we omit the PasswordHash column in the SQL  
                     sql = @"UPDATE [User] 
                     SET Username = @Username, 
                         IsAdmin = @IsAdmin 

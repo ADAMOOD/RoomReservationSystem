@@ -64,13 +64,6 @@ namespace RoomReservationSystem.Repositories
                 return await db.QueryAsync<UserProfileReservationViewModel>(sql, new { UserId = userId });
             }
         }
-        public async Task UpdateReservationAsync(Reservation reservation)
-        {
-            using (IDbConnection db = new SqlConnection(_connectionString))
-            {
-                await db.UpdateAsync(reservation);
-            }
-        }
 
         public async Task<IEnumerable<Reservation>> GetReservationsAsync()
         {
@@ -196,7 +189,6 @@ namespace RoomReservationSystem.Repositories
 
                 bool userParamAdded = false;
 
-                // Pokud chce vidět JEN SVOJE
                 if (onlyMine && loggedUserId.HasValue)
                 {
                     sql += " AND r.OrganizerId = @LoggedUserId ";
@@ -204,14 +196,14 @@ namespace RoomReservationSystem.Repositories
                     userParamAdded = true;
                 }
 
-                // --- BEZPEČNOSTNÍ FILTR ÚČELU ---
+                // --- security check ---
                 if (!string.IsNullOrWhiteSpace(purpose))
                 {
                     if (loggedUserId.HasValue)
                     {
-                        // Uživatel hledá text.
-                        // Jeho vlastní rezervace musí text obsahovat.
-                        // Cizí rezervace se zobrazí VŽDY (pokud nezvolil onlyMine), aby nedošlo k uniku informací.
+                        // User is searching for text.
+                        // Their own reservations must contain the text.
+                        // Foreign reservations are always displayed (unless they chose onlyMine) to prevent information leakage.
                         sql += " AND ((r.OrganizerId = @LoggedUserId AND r.Purpose LIKE @Purpose) OR r.OrganizerId != @LoggedUserId) ";
 
                         if (!userParamAdded)
@@ -222,8 +214,7 @@ namespace RoomReservationSystem.Repositories
                     }
                     else
                     {
-                        // Nepřihlášený uživatel se snaží filtrovat podle účelu.
-                        // Z bezpečnostních důvodů tento filtr pro nepřihlášené úplně ignorujeme.
+                        //unsigned user is searching for text. This is not allowed, as it would leak information about other users' reservations.
                     }
                 }
 
@@ -265,7 +256,7 @@ namespace RoomReservationSystem.Repositories
                 return rowsAffected > 0;
             }
         }
-        internal async Task<bool> UpdateRoomAsync(Reservation updatedReservation)
+        public async Task<bool> UpdateReservationAsync(Reservation updatedReservation)
         {
             using (IDbConnection db = new SqlConnection(_connectionString))
             {
